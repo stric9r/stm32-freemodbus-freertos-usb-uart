@@ -43,8 +43,11 @@
 									<listOptionValue builtIn="false" value="../Drivers/BSP/STM32L5xx_Nucleo"/>
 									<listOptionValue builtIn="false" value="../Drivers/CMSIS/Device/ST/STM32L5xx/Include"/>
 									<listOptionValue builtIn="false" value="../Drivers/CMSIS/Include"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/Middlewares/Third_Party/freemodbus/modbus/include}&quot;"/>
 									<listOptionValue builtIn="false" value="../Src/port"/>
+									<listOptionValue builtIn="false" value="../Middlewares/Third_Party/freemodbus/modbus/include"/>
+									<listOptionValue builtIn="false" value="../Inc/hw"/>
+									<listOptionValue builtIn="false" value="../Inc/rtos"/>
+									<listOptionValue builtIn="false" value="../Inc/modbus"/>
 								</option>
 								<inputType id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.assembler.input.631146008" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.assembler.input"/>
 							</tool>
@@ -68,6 +71,9 @@
 									<listOptionValue builtIn="false" value="../Drivers/CMSIS/Include"/>
 									<listOptionValue builtIn="false" value="../Middlewares/Third_Party/freemodbus/modbus/include"/>
 									<listOptionValue builtIn="false" value="../Src/port"/>
+									<listOptionValue builtIn="false" value="../Inc/hw"/>
+									<listOptionValue builtIn="false" value="../Inc/rtos"/>
+									<listOptionValue builtIn="false" value="../Inc/modbus"/>
 								</option>
 								<inputType id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c.760981502" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c"/>
 							</tool>
@@ -143,6 +149,9 @@
 									<listOptionValue builtIn="false" value="../Drivers/CMSIS/Include"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/Middlewares/Third_Party/freemodbus/modbus/include}&quot;"/>
 									<listOptionValue builtIn="false" value="../Src/port"/>
+									<listOptionValue builtIn="false" value="../Inc/hw"/>
+									<listOptionValue builtIn="false" value="../Inc/rtos"/>
+									<listOptionValue builtIn="false" value="../Inc/modbus"/>
 								</option>
 								<inputType id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.assembler.input.543797659" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.assembler.input"/>
 							</tool>
@@ -165,6 +174,9 @@
 									<listOptionValue builtIn="false" value="../Drivers/CMSIS/Include"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/Middlewares/Third_Party/freemodbus/modbus/include}&quot;"/>
 									<listOptionValue builtIn="false" value="../Src/port"/>
+									<listOptionValue builtIn="false" value="../Inc/hw"/>
+									<listOptionValue builtIn="false" value="../Inc/rtos"/>
+									<listOptionValue builtIn="false" value="../Inc/modbus"/>
 								</option>
 								<inputType id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c.232073326" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c"/>
 							</tool>
