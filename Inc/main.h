@@ -29,6 +29,8 @@ extern "C" {
 /* Includes ------------------------------------------------------------------*/
 #include "stm32l5xx_hal.h"
 
+// @todo [2026-4-12] Rename main.h to common.h or something similar
+
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
