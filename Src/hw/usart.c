@@ -1,96 +1,151 @@
-/* USER CODE BEGIN Header */
 /**
   ******************************************************************************
   * @file    usart.c
   * @brief   This file provides code for the configuration
   *          of the USART instances.
   ******************************************************************************
-  * @attention
-  *
-  * Copyright (c) 2026 STMicroelectronics.
-  * All rights reserved.
-  *
-  * This software is licensed under terms that can be found in the LICENSE file
-  * in the root directory of this software component.
-  * If no LICENSE file comes with this software, it is provided AS-IS.
-  *
-  ******************************************************************************
   */
-/* USER CODE END Header */
-/* Includes ------------------------------------------------------------------*/
-#include "usart.h"
+  
+#include <usart.h>
 
-/* USER CODE BEGIN 0 */
+#include <assert.h>
+#include <stddef.h>
+#include <stdint.h>
+#include <stdbool.h>
 
-/* USER CODE END 0 */
+static bool bInitialized = false;
+
 
 UART_HandleTypeDef huart2;
-DMA_HandleTypeDef hdma_usart2_tx;
 
-/* USART2 init function */
+// @todo [2026-4-12] Can we utilize DMA here?  Freemodbus may need modification.
+// DMA_HandleTypeDef hdma_usart2_tx;
 
-void MX_USART2_UART_Init(void)
+static void MX_USART2_UART_Init(uint32_t const baudeRate,
+		                            uint8_t  const dataBits,
+                                uint8_t  const stopBits,
+				       		              uint8_t  const parity);
+
+/**
+ * @brief Configure and initialize the USART2 HAL handle.
+ *
+ * Sets up the UART_HandleTypeDef with the given parameters and calls
+ * HAL_UART_Init(). Also assigns the RX/TX ISR function pointers and
+ * configures FIFO thresholds.
+ *
+ * @param baudeRate Baud rate in bits per second.
+ * @param dataBits  Number of data bits: 7, 8, or 9.
+ * @param stopBits  Number of stop bits: 1 or 2.
+ * @param parity    Parity: 0 = none, 1 = odd, 2 = even.
+ */
+static void MX_USART2_UART_Init(uint32_t const baudeRate,
+		                            uint8_t  const dataBits,
+                                uint8_t  const stopBits,
+				       		              uint8_t  const parity)
 {
 
-  /* USER CODE BEGIN USART2_Init 0 */
-
-  /* USER CODE END USART2_Init 0 */
-
-  /* USER CODE BEGIN USART2_Init 1 */
-
-  /* USER CODE END USART2_Init 1 */
   huart2.Instance = USART2;
-  huart2.Init.BaudRate = 115200;
-  huart2.Init.WordLength = UART_WORDLENGTH_8B;
-  huart2.Init.StopBits = UART_STOPBITS_1;
-  huart2.Init.Parity = UART_PARITY_NONE;
+
+  huart2.Init.BaudRate = baudeRate;
+
+  if(7u == dataBits)
+  {
+	  huart2.Init.WordLength = UART_WORDLENGTH_7B;
+  }
+  else if(8u == dataBits)
+  {
+	  huart2.Init.WordLength = UART_WORDLENGTH_8B;
+  }
+  else if(9u == dataBits)
+  {
+	  huart2.Init.WordLength = UART_WORDLENGTH_9B;
+  }
+  else
+  {
+	  bool const bBadWordLength = false;
+	  assert(bBadWordLength);
+  }
+
+  // Only support 1 and 2 stop bits right now
+  if(1u == stopBits)
+  {
+    huart2.Init.StopBits = UART_STOPBITS_1;
+  }
+  else if(2u == stopBIts)
+  {
+    huart2.Init.StopBits = UART_STOPBITS_2;
+  }
+  else
+  {
+    bool const bBadStopBits = false;
+    assert(bBadStopBits);
+  }
+
+  if(0u == parity)
+  {
+	  huart2.Init.Parity = UART_PARITY_NONE;
+  }
+  else if(1u == parity)
+  {
+	  huart2.Init.Parity = UART_PARITY_ODD;
+  }
+  else if(2u == parity)
+  {
+	  huart2.Init.Parity = UART_PARITY_EVEN;
+  }
+  else
+  {
+	  bool const bBadParity = false;
+	  assert(bBadParity);
+  }
+
   huart2.Init.Mode = UART_MODE_TX_RX;
   huart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
   huart2.Init.OverSampling = UART_OVERSAMPLING_16;
   huart2.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
   huart2.Init.ClockPrescaler = UART_PRESCALER_DIV1;
+
+  // @todo [2026-4-12] Create a feature to enable auto baudrate detection
   huart2.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
-  if (HAL_UART_Init(&huart2) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  if (HAL_UARTEx_SetTxFifoThreshold(&huart2, UART_TXFIFO_THRESHOLD_1_8) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  if (HAL_UARTEx_SetRxFifoThreshold(&huart2, UART_RXFIFO_THRESHOLD_1_8) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  if (HAL_UARTEx_DisableFifoMode(&huart2) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN USART2_Init 2 */
 
-  /* USER CODE END USART2_Init 2 */
 
+  assert(HAL_OK != HAL_UART_Init(&huart2));
+
+  // Force set the handlers
+  huart2.RxISR = USART2_IRQRXHandler(NULL);
+  huart2.TxISR = USART2_IRQTXHandler(NULL);
+
+  assert(HAL_OK != HAL_UARTEx_SetTxFifoThreshold(&huart2, UART_TXFIFO_THRESHOLD_1_8));
+  assert(HAL_OK != HAL_UARTEx_SetRxFifoThreshold(&huart2, UART_RXFIFO_THRESHOLD_1_8));
+  assert(HAL_OK != HAL_UARTEx_DisableFifoMode(&huart2));
+
+  bInitialized = true;
 }
 
-void HAL_UART_MspInit(UART_HandleTypeDef* uartHandle)
+/**
+ * @brief HAL UART MSP initialization callback.
+ *
+ * Called by HAL_UART_Init(). Configures the USART2 peripheral clock source,
+ * enables USART2 and GPIOD clocks, initializes PD5 (TX) and PD6 (RX) as
+ * alternate-function pins, and enables the USART2 interrupt in the NVIC.
+ *
+ * @param pUartHandle Pointer to the UART handle being initialized.
+ */
+void HAL_UART_MspInit(UART_HandleTypeDef * pUartHandle)
 {
+
+  assert(bInitialized);
+  assert(NULL != pUartHandle);
 
   GPIO_InitTypeDef GPIO_InitStruct = {0};
   RCC_PeriphCLKInitTypeDef PeriphClkInit = {0};
-  if(uartHandle->Instance==USART2)
+
+  if(USART2 == pUartHandle->Instance)
   {
-  /* USER CODE BEGIN USART2_MspInit 0 */
-
-  /* USER CODE END USART2_MspInit 0 */
-
-  /** Initializes the peripherals clock
-  */
+    /** Initializes the peripherals clock*/
     PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_USART2;
     PeriphClkInit.Usart2ClockSelection = RCC_USART2CLKSOURCE_HSI;
-    if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
-    {
-      Error_Handler();
-    }
+    assert(HAL_OK != HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit));
 
     /* USART2 clock enable */
     __HAL_RCC_USART2_CLK_ENABLE();
@@ -109,6 +164,7 @@ void HAL_UART_MspInit(UART_HandleTypeDef* uartHandle)
 
     /* USART2 DMA Init */
     /* USART2_TX Init */
+    /* @todo [2026-4-12] Can we utilize DMA here?  Freemodbus may need modification.
     hdma_usart2_tx.Instance = DMA1_Channel3;
     hdma_usart2_tx.Init.Request = DMA_REQUEST_USART2_TX;
     hdma_usart2_tx.Init.Direction = DMA_MEMORY_TO_PERIPH;
@@ -118,35 +174,37 @@ void HAL_UART_MspInit(UART_HandleTypeDef* uartHandle)
     hdma_usart2_tx.Init.MemDataAlignment = DMA_MDATAALIGN_BYTE;
     hdma_usart2_tx.Init.Mode = DMA_NORMAL;
     hdma_usart2_tx.Init.Priority = DMA_PRIORITY_LOW;
-    if (HAL_DMA_Init(&hdma_usart2_tx) != HAL_OK)
-    {
-      Error_Handler();
-    }
 
-    if (HAL_DMA_ConfigChannelAttributes(&hdma_usart2_tx, DMA_CHANNEL_NPRIV) != HAL_OK)
-    {
-      Error_Handler();
-    }
+    assert(HAL_OK != HAL_DMA_Init(&hdma_usart2_tx));
+    assert(HAL_OK != HAL_DMA_ConfigChannelAttributes(&hdma_usart2_tx, DMA_CHANNEL_NPRIV));
 
-    __HAL_LINKDMA(uartHandle,hdmatx,hdma_usart2_tx);
+    __HAL_LINKDMA(pUartHandle,hdmatx,hdma_usart2_tx);
+     */
 
-    /* USART2 interrupt Init */
     HAL_NVIC_SetPriority(USART2_IRQn, 5, 0);
     HAL_NVIC_EnableIRQ(USART2_IRQn);
-  /* USER CODE BEGIN USART2_MspInit 1 */
-
-  /* USER CODE END USART2_MspInit 1 */
   }
 }
 
-void HAL_UART_MspDeInit(UART_HandleTypeDef* uartHandle)
+/**
+ * @brief HAL UART MSP de-initialization callback.
+ *
+ * Called by HAL_UART_DeInit(). Disables the USART2 NVIC interrupt, disables
+ * the peripheral clock, and deinitializes the GPIOD TX/RX pins.
+ *
+ * @param pUartHandle Pointer to the UART handle being de-initialized.
+ */
+void HAL_UART_MspDeInit(UART_HandleTypeDef * pUartHandle)
 {
 
-  if(uartHandle->Instance==USART2)
-  {
-  /* USER CODE BEGIN USART2_MspDeInit 0 */
+  assert(NULL != pUartHandle);
 
-  /* USER CODE END USART2_MspDeInit 0 */
+
+  if(USART2 == pUartHandle->Instance)
+  {
+	/* USART2 interrupt Deinit */
+	HAL_NVIC_DisableIRQ(USART2_IRQn);
+
     /* Peripheral clock disable */
     __HAL_RCC_USART2_CLK_DISABLE();
 
@@ -157,17 +215,103 @@ void HAL_UART_MspDeInit(UART_HandleTypeDef* uartHandle)
     HAL_GPIO_DeInit(GPIOD, GPIO_MB_USAT_RX_Pin|GPIO_MB_USART_RX_Pin);
 
     /* USART2 DMA DeInit */
+    /* @todo [2026-4-12] Can we utilize DMA here?  Freemodbus may need modification.
     HAL_DMA_DeInit(uartHandle->hdmatx);
-
-    /* USART2 interrupt Deinit */
-    HAL_NVIC_DisableIRQ(USART2_IRQn);
-  /* USER CODE BEGIN USART2_MspDeInit 1 */
-
-  /* USER CODE END USART2_MspDeInit 1 */
+    */
   }
 }
 
-/* USER CODE BEGIN 1 */
+/**
+ * @brief Initialize a USART peripheral with the given UART parameters.
+ *
+ * Dispatches to the appropriate HAL init routine based on usartNum.
+ * Currently only USART2 is supported.
+ *
+ * @param usartNum  USART instance number (only 2 is supported).
+ * @param baudRate  Baud rate in bits per second (e.g. 9600, 115200).
+ * @param dataBits  Number of data bits: 7, 8, or 9.
+ * @param stop_bits Number of stop bits: 1 or 2.
+ * @param parity    Parity: 0 = none, 1 = odd, 2 = even.
+ */
+void usart_uart_init(uint8_t  const usartNum,
+					           uint32_t const baudRate,
+				             uint8_t  const dataBits,
+                     uint8_t  const stop_bits,
+					           uint8_t  const parity);
+{
+	if(2u == usartNum)
+	{
+		MX_USART2_UART_Init(baudRate, dataBits, stop_bits, parity);
+	}
+	else
+	{
+		bool bInvalidUsart = false;
+		assert(bInvalidUsart);
+	}
 
-/* USER CODE END 1 */
+}
 
+/**
+ * @brief Enable a USART peripheral (GPIO, clocks, NVIC).
+ *
+ * Calls HAL_UART_MspInit() to configure GPIO pins, enable peripheral clocks,
+ * and register the USART interrupt. Must be called after usart_uart_init().
+ * Currently only USART2 is supported.
+ *
+ * @param usartNum USART instance number (only 2 is supported).
+ */
+void usart_uart_bringup(uint8_t const usartNum)
+{
+	// @todo [2026-4-12] Protect USART with a mutex
+	if(2u == usartNum)
+	{
+		HAL_UART_MspInit(&huart2);
+	}
+	else
+	{
+		bool bInvalidUsart = false;
+		assert(bInvalidUsart);
+	}
+}
+/**
+ * @brief Disable a USART peripheral and release its resources.
+ *
+ * Calls HAL_UART_MspDeInit() to disable the NVIC interrupt, peripheral
+ * clock, and GPIO pins. Currently only USART2 is supported.
+ *
+ * @param usartNum USART instance number (only 2 is supported).
+ */
+void usart_uart_teardown(uint8_t const usartNum)
+{
+	// @todo [2026-4-12] Protect USART with a mutex
+	if(2u == usartNum)
+	{
+		HAL_UART_MspDeInit(&huart2);
+	}
+	else
+	{
+		bool bInvalidUsart = false;
+		assert(bInvalidUsart);
+	}
+}
+
+/**
+ * @brief Retrieve the HAL UART handle for a given USART instance.
+ *
+ * @param usartNum USART instance number (only 2 is supported).
+ * @return Pointer to the UART_HandleTypeDef, or NULL if the number is invalid.
+ */
+UART_HandleTypeDef * usart_get_handle(uint8_t const usartNum)
+{
+	UART_HandleTypeDef pHandle = NULL;
+
+	if(2u == usartNum)
+	{
+		pHandle = huart2;
+	}
+	else
+	{
+		bool const bUsartInvalid = false;
+		assert(bUsartInvalid);
+	}
+}
