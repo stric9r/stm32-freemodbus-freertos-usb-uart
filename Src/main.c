@@ -26,6 +26,8 @@
 #include "main.h"
 #include "cmsis_os.h"
 
+#include <stdbool.h>
+
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
@@ -93,9 +95,9 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  MX_DMA_Init();
+  //MX_DMA_Init();
   MX_ICACHE_Init();
-  MX_USART2_UART_Init();
+  // Modbus lib will init this MX_USART2_UART_Init();
   MX_LPTIM1_Init();
   MX_USB_PCD_Init();
   /* USER CODE BEGIN 2 */
