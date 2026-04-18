@@ -1,4 +1,3 @@
-/* USER CODE BEGIN Header */
 /**
   ******************************************************************************
   * File Name          : freertos.c
@@ -15,9 +14,8 @@
   *
   ******************************************************************************
   */
-/* USER CODE END Header */
+#include "app_freertos.h"
 
-/* Includes ------------------------------------------------------------------*/
 #include "FreeRTOS.h"
 #include "task.h"
 
@@ -32,8 +30,6 @@ static StackType_t  defaultTaskStack[DEFAULT_TASK_STACK_SIZE];
 static StaticTask_t idleTaskTcb;
 static StackType_t  idleTaskStack[configMINIMAL_STACK_SIZE];
 
-void MX_FREERTOS_Init(void);
-
 static void defaultTask(void *argument)
 {
     (void)argument;
@@ -43,7 +39,7 @@ static void defaultTask(void *argument)
     }
 }
 
-void MX_FREERTOS_Init(void)
+void app_freertos_init(void)
 {
     defaultTaskHandle = xTaskCreateStatic(
         defaultTask,

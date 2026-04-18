@@ -24,13 +24,14 @@
 #include "usart.h"
 #include "usb.h"
 
+#include "app_freertos.h"
 #include "FreeRTOS.h"
 #include "task.h"
 
 #include <stdbool.h>
 
-void SystemClock_Config(void);
-void MX_FREERTOS_Init(void);
+static void SystemClock_Config(void);
+static bool isDebuggerAttached(void);
 
 /**
   * @brief  The application entry point.
@@ -38,17 +39,16 @@ void MX_FREERTOS_Init(void);
   */
 int main(void)
 {
-  /* MCU Configuration--------------------------------------------------------*/
-
-  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
+  // Reset of all peripherals, Initializes the Flash interface and the Systick. 
   HAL_Init();
 
-  /* Configure the system clock */
+  // Configure the system clock 
   SystemClock_Config();
 
-  /* Initialize all configured peripherals */
+  // Initialize all configured peripherals 
   MX_GPIO_Init();
 
+  // todo [2026-04-18] Use DMA if possible
   //MX_DMA_Init();
 
   MX_ICACHE_Init();
@@ -58,42 +58,34 @@ int main(void)
   // todo [2026-04-18] USB not ready yet
   MX_USB_PCD_Init();
 
+  app_freertos_init();
 
-  /* Init scheduler */
-
-  MX_FREERTOS_Init();
-
-  /* Start scheduler */
+  // Start scheduler 
   vTaskStartScheduler();
 
-  /* We should never get here as control is now taken by the scheduler */
+  // We should never get here as control is now taken by the scheduler 
 
-  /* Infinite loop */
-  /* USER CODE BEGIN WHILE */
+  // Infinite loop 
   while (1)
   {
-    /* USER CODE END WHILE */
-
-    /* USER CODE BEGIN 3 */
+    bool const bSchedulerFallThrough = false;
+    assert(bSchedulerFallThrough);
   }
-  /* USER CODE END 3 */
+
 }
 
 /**
   * @brief System Clock Configuration
   * @retval None
   */
-void SystemClock_Config(void)
+static void SystemClock_Config(void)
 {
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
   RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
 
   /** Configure the main internal regulator output voltage
   */
-  if (HAL_PWREx_ControlVoltageScaling(PWR_REGULATOR_VOLTAGE_SCALE0) != HAL_OK)
-  {
-    Error_Handler();
-  }
+  assert(HAL_OK == HAL_PWREx_ControlVoltageScaling(PWR_REGULATOR_VOLTAGE_SCALE0));
 
   /** Configure LSE Drive Capability
   */
@@ -119,10 +111,7 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV7;
   RCC_OscInitStruct.PLL.PLLQ = RCC_PLLQ_DIV2;
   RCC_OscInitStruct.PLL.PLLR = RCC_PLLR_DIV2;
-  if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
-  {
-    Error_Handler();
-  }
+  assert(HAL_OK == HAL_RCC_OscConfig(&RCC_OscInitStruct));
 
   /** Initializes the CPU, AHB and APB buses clocks
   */
@@ -133,19 +122,12 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_5) != HAL_OK)
-  {
-    Error_Handler();
-  }
+  assert(HAL_OK == HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_5));
 
   /** Enable MSI Auto calibration
   */
   HAL_RCCEx_EnableMSIPLLMode();
 }
-
-/* USER CODE BEGIN 4 */
-
-/* USER CODE END 4 */
 
 /**
   * @brief  Period elapsed callback in non blocking mode
@@ -157,20 +139,15 @@ void SystemClock_Config(void)
   */
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
-  /* USER CODE BEGIN Callback 0 */
-
-  /* USER CODE END Callback 0 */
   if (htim->Instance == TIM6)
   {
     HAL_IncTick();
   }
-  /* USER CODE BEGIN Callback 1 */
-
-  /* USER CODE END Callback 1 */
 }
 
 
-bool isDebuggerAttached(void) {
+static bool isDebuggerAttached(void) 
+{
     return (CoreDebug->DHCSR & CoreDebug_DHCSR_C_DEBUGEN_Msk) != 0;
 }
 
