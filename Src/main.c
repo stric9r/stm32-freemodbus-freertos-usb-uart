@@ -98,7 +98,7 @@ int main(void)
   //MX_DMA_Init();
   MX_ICACHE_Init();
   // Modbus lib will init this MX_USART2_UART_Init();
-  lptim1_init();
+  lptim_init();
   MX_USB_PCD_Init();
   /* USER CODE BEGIN 2 */
 

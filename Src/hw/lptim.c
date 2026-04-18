@@ -127,7 +127,7 @@ void lptim_enable(uint8_t const timerNum)
   if (1u == timerNum)
   {
     assert(HAL_OK == HAL_LPTIM_Init(&hLptim1));
-    HAL_LPTIM_OnePulse_Start_IT(&hLptim1, periodTicksLptim1);
+    HAL_LPTIM_OnePulse_Start_IT(&hLptim1, periodTicksLptim1, 0u);
   }
   else
   {

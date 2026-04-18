@@ -53,15 +53,15 @@
  * Implemented as a macro so MB_TIMER_IRQ (the actual vector-table function)
  * can expand it inline with zero call overhead.
  */
-#define MB_TIMER_IRQ_FUNC()                              
-    {
-        if (MB_TIMER_INSTANCE->ISR & MB_TIMER_ISR_FLAG)      \
-        {                                                    \
-            MB_TIMER_INSTANCE->ICR = MB_TIMER_ICR_FLAG;      \
-            vMBTimerDebugSetHigh();                          \
-            pxMBPortCBTimerExpired();                        \
-            vMBTimerDebugSetLow();                           \
-        }
+#define MB_TIMER_IRQ_FUNC()                              \
+    {                                                    \
+        if (MB_TIMER_INSTANCE->ISR & MB_TIMER_ISR_FLAG)  \
+        {                                                \
+            MB_TIMER_INSTANCE->ICR = MB_TIMER_ICR_FLAG;  \
+            vMBTimerDebugSetHigh();                      \
+            pxMBPortCBTimerExpired();                    \
+            vMBTimerDebugSetLow();                       \
+        }                                                \
     }
 /**
  * @defgroup MBSerial  Modbus hardware serial configuration
@@ -81,10 +81,10 @@
  *   MB_SERIAL_PUT_BYTE(b)   — write one byte directly to the TX data register
  *   MB_SERIAL_GET_BYTE()    — read one byte directly from the RX data register
  *
- *   MB_SERIAL_ENABLE_RX_IRQ()   — set RXNEIE in CR1 to arm the RX interrupt
- *   MB_SERIAL_DISABLE_RX_IRQ()  — clear RXNEIE in CR1 to mask the RX interrupt
- *   MB_SERIAL_ENABLE_TX_IRQ()   — set TXEIE in CR1 to arm the TX interrupt
- *   MB_SERIAL_DISABLE_TX_IRQ()  — clear TXEIE in CR1 to mask the TX interrupt
+ *   MB_SERIAL_ENABLE_RX_IRQ()   — set USART_CR1_RXNEIE to arm the RX interrupt
+ *   MB_SERIAL_DISABLE_RX_IRQ()  — clear USART_CR1_RXNEIE to mask the RX interrupt
+ *   MB_SERIAL_ENABLE_TX_IRQ()   — set USART_CR1_TXEIE to arm the TX interrupt
+ *   MB_SERIAL_DISABLE_TX_IRQ()  — clear USART_CR1_TXEIE to mask the TX interrupt
  *
  * Current mapping: USART2
  * @{
@@ -101,10 +101,10 @@
 #define MB_SERIAL_PUT_BYTE(b)      (MB_SERIAL_INSTANCE->TDR = (uint8_t)(b))
 #define MB_SERIAL_GET_BYTE()       ((uint8_t)(MB_SERIAL_INSTANCE->RDR))
 
-#define MB_SERIAL_ENABLE_RX_IRQ()  (MB_SERIAL_INSTANCE->CR1 |=  USART_CR1_RXNEIE_RXFNEIE)
-#define MB_SERIAL_DISABLE_RX_IRQ() (MB_SERIAL_INSTANCE->CR1 &= ~USART_CR1_RXNEIE_RXFNEIE)
-#define MB_SERIAL_ENABLE_TX_IRQ()  (MB_SERIAL_INSTANCE->CR1 |=  USART_CR1_TXEIE_TXFNEIE)
-#define MB_SERIAL_DISABLE_TX_IRQ() (MB_SERIAL_INSTANCE->CR1 &= ~USART_CR1_TXEIE_TXFNEIE)
+#define MB_SERIAL_ENABLE_RX_IRQ()  (MB_SERIAL_INSTANCE->CR1 |=  USART_CR1_RXNEIE)
+#define MB_SERIAL_DISABLE_RX_IRQ() (MB_SERIAL_INSTANCE->CR1 &= ~USART_CR1_RXNEIE)
+#define MB_SERIAL_ENABLE_TX_IRQ()  (MB_SERIAL_INSTANCE->CR1 |=  USART_CR1_TXEIE)
+#define MB_SERIAL_DISABLE_TX_IRQ() (MB_SERIAL_INSTANCE->CR1 &= ~USART_CR1_TXEIE)
 /** @} */
 
 /**
@@ -119,7 +119,7 @@
  * This macro reads ISR once, clears the three error flags that would stall
  * the UART if left set (framing, noise, overrun), then calls the FreeModbus
  * callbacks only for the interrupts that are actually enabled in CR1. The
- * CR1 guard is required because vMBPortSerialEnable() uses RXNEIE/TXEIE
+ * CR1 guard is required because vMBPortSerialEnable() uses USART_CR1_RXNEIE/TXEIE
  * to gate RX and TX independently for half-duplex RS-485 direction control.
  *
  * Implemented as a macro so MB_SERIAL_PERIPH_IRQ (the actual vector-table
@@ -130,14 +130,14 @@
         uint32_t const isr = MB_SERIAL_INSTANCE->ISR;                             \
         MB_SERIAL_INSTANCE->ICR = USART_ICR_FECF | USART_ICR_NECF                 \
                                   | USART_ICR_ORECF;                              \
-        if ((isr & USART_ISR_RXNE_RXFNE) &&                                       \
-            (MB_SERIAL_INSTANCE->CR1 & USART_CR1_RXNEIE_RXFNEIE))                 \
+        if ((isr & USART_ISR_RXNE) &&                                       \
+            (MB_SERIAL_INSTANCE->CR1 & USART_CR1_RXNEIE))                 \
         {                                                                         \
             vMBTimerDebugSetLow();                                                \
             pxMBFrameCBByteReceived();                                            \
         }                                                                         \
-        if ((isr & USART_ISR_TXE_TXFNF) &&                                        \
-            (MB_SERIAL_INSTANCE->CR1 & USART_CR1_TXEIE_TXFNEIE))                  \
+        if ((isr & USART_ISR_TXE) &&                                        \
+            (MB_SERIAL_INSTANCE->CR1 & USART_CR1_TXEIE))                  \
         {                                                                         \
             pxMBFrameCBTransmitterEmpty();                                        \
         }                                                                         \
