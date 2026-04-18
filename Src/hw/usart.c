@@ -5,8 +5,11 @@
   *          of the USART instances.
   ******************************************************************************
   */
-  
-#include <usart.h>
+
+#include "usart.h"
+
+#include "stm32l5xx_hal.h"
+#include "usart_common.h"
 
 #include <assert.h>
 #include <stddef.h>
@@ -17,9 +20,10 @@ static bool bInitialized = false;
 
 
 UART_HandleTypeDef huart2;
+UART_HandleTypeDef * const pHandle = &huart2;
 
 // @todo [2026-4-12] Can we utilize DMA here?  Freemodbus may need modification.
-// DMA_HandleTypeDef hdma_usart2_tx;
+DMA_HandleTypeDef hdma_usart2_tx;
 
 static void MX_USART2_UART_Init(uint32_t const baudeRate,
 		                            uint8_t  const dataBits,
@@ -71,7 +75,7 @@ static void MX_USART2_UART_Init(uint32_t const baudeRate,
   {
     huart2.Init.StopBits = UART_STOPBITS_1;
   }
-  else if(2u == stopBIts)
+  else if(2u == stopBits)
   {
     huart2.Init.StopBits = UART_STOPBITS_2;
   }
@@ -112,8 +116,8 @@ static void MX_USART2_UART_Init(uint32_t const baudeRate,
   assert(HAL_OK != HAL_UART_Init(&huart2));
 
   // Force set the handlers
-  huart2.RxISR = USART2_IRQRXHandler(NULL);
-  huart2.TxISR = USART2_IRQTXHandler(NULL);
+  huart2.RxISR = USART2_IRQRXHandler;
+  huart2.TxISR = USART2_IRQTXHandler;
 
   assert(HAL_OK != HAL_UARTEx_SetTxFifoThreshold(&huart2, UART_TXFIFO_THRESHOLD_1_8));
   assert(HAL_OK != HAL_UARTEx_SetRxFifoThreshold(&huart2, UART_RXFIFO_THRESHOLD_1_8));
@@ -237,8 +241,11 @@ void usart_uart_init(uint8_t  const usartNum,
 					           uint32_t const baudRate,
 				             uint8_t  const dataBits,
                      uint8_t  const stop_bits,
-					           uint8_t  const parity);
+					           uint8_t  const parity)
 {
+
+  (void)hdma_usart2_tx;
+  
 	if(2u == usartNum)
 	{
 		MX_USART2_UART_Init(baudRate, dataBits, stop_bits, parity);
@@ -303,15 +310,17 @@ void usart_uart_teardown(uint8_t const usartNum)
  */
 UART_HandleTypeDef * usart_get_handle(uint8_t const usartNum)
 {
-	UART_HandleTypeDef pHandle = NULL;
+	UART_HandleTypeDef * pAddress = NULL;
 
 	if(2u == usartNum)
 	{
-		pHandle = huart2;
+	     pAddress = pHandle;
 	}
 	else
 	{
 		bool const bUsartInvalid = false;
 		assert(bUsartInvalid);
 	}
+
+	return pAddress;
 }
