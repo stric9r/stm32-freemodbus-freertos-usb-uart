@@ -17,14 +17,16 @@
   */
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
-#include "main.h"
-#include "cmsis_os.h"
 #include "dma.h"
+#include "gpio.h"
 #include "icache.h"
 #include "lptim.h"
 #include "usart.h"
 #include "usb.h"
-#include "gpio.h"
+#include "main.h"
+#include "cmsis_os.h"
+
+#include <stdbool.h>
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -93,10 +95,10 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  MX_DMA_Init();
+  //MX_DMA_Init();
   MX_ICACHE_Init();
-  MX_USART2_UART_Init();
-  MX_LPTIM1_Init();
+  // Modbus lib will init this MX_USART2_UART_Init();
+  lptim_init();
   MX_USB_PCD_Init();
   /* USER CODE BEGIN 2 */
 
@@ -212,6 +214,11 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   /* USER CODE END Callback 1 */
 }
 
+
+bool isDebuggerAttached(void) {
+    return (CoreDebug->DHCSR & CoreDebug_DHCSR_C_DEBUGEN_Msk) != 0;
+}
+
 /**
   * @brief  This function is executed in case of error occurrence.
   * @retval None
@@ -236,9 +243,11 @@ void Error_Handler(void)
   */
 void assert_failed(uint8_t *file, uint32_t line)
 {
-  /* USER CODE BEGIN 6 */
-  /* User can add his own implementation to report the file name and line number,
-     ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
-  /* USER CODE END 6 */
+	// @todo [2026-4-12] Print to a serial debug port
+
+	if(isDebuggerAttached())
+	{
+		Error_Handler();
+	}
 }
 #endif /* USE_FULL_ASSERT */

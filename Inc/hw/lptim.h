@@ -16,8 +16,7 @@
   *
   ******************************************************************************
   */
-/* USER CODE END Header */
-/* Define to prevent recursive inclusion -------------------------------------*/
+
 #ifndef __LPTIM_H__
 #define __LPTIM_H__
 
@@ -25,24 +24,13 @@
 extern "C" {
 #endif
 
-/* Includes ------------------------------------------------------------------*/
 #include "main.h"
 
-/* USER CODE BEGIN Includes */
 
-/* USER CODE END Includes */
-
-extern LPTIM_HandleTypeDef hlptim1;
-
-/* USER CODE BEGIN Private defines */
-
-/* USER CODE END Private defines */
-
-void MX_LPTIM1_Init(void);
-
-/* USER CODE BEGIN Prototypes */
-
-/* USER CODE END Prototypes */
+void lptim_init(void);
+void lptim_set_period(uint8_t timerNum, uint16_t timerUs);
+void lptim_enable(uint8_t timerNum);
+void lptim_disable(uint8_t timerNum);
 
 #ifdef __cplusplus
 }

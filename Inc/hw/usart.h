@@ -1,4 +1,3 @@
-/* USER CODE BEGIN Header */
 /**
   ******************************************************************************
   * @file    usart.h
@@ -16,7 +15,7 @@
   *
   ******************************************************************************
   */
-/* USER CODE END Header */
+
 /* Define to prevent recursive inclusion -------------------------------------*/
 #ifndef __USART_H__
 #define __USART_H__
@@ -26,23 +25,27 @@ extern "C" {
 #endif
 
 /* Includes ------------------------------------------------------------------*/
+#include "stm32l5xx_hal.h"
 #include "main.h"
 
-/* USER CODE BEGIN Includes */
 
-/* USER CODE END Includes */
-
+// @todo [2026-4-12] Decouple how the handle is passed around.  It's ugly.
 extern UART_HandleTypeDef huart2;
 
-/* USER CODE BEGIN Private defines */
 
-/* USER CODE END Private defines */
+void usart_uart_init(uint8_t  const usartNum,
+					           uint32_t const baudRate,
+				             uint8_t  const dataBits,
+                     uint8_t  const stop_bits,
+					           uint8_t  const parity);
 
-void MX_USART2_UART_Init(void);
+void usart_uart_bringup(uint8_t const usartNum);
+void usart_uart_teardown(uint8_t const usartNum);
 
-/* USER CODE BEGIN Prototypes */
+static inline void usart_uart2_set_byte(uint8_t const byte){ USART2->TDR = byte;};
+static inline uint8_t usart_uart2_get_byte(void){ return USART2->RDR;};
 
-/* USER CODE END Prototypes */
+UART_HandleTypeDef * usart_get_handle(uint8_t const usartNum);
 
 #ifdef __cplusplus
 }

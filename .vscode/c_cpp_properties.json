@@ -1,0 +1,40 @@
+{
+    "configurations": [
+        {
+            "name": "STM32L552 (arm-none-eabi)",
+            "includePath": [
+                "${workspaceFolder}/Inc",
+                "${workspaceFolder}/Inc/hw",
+                "${workspaceFolder}/Inc/rtos",
+                "${workspaceFolder}/Inc/modbus",
+                "${workspaceFolder}/Src/port",
+                "${workspaceFolder}/Drivers/STM32L5xx_HAL_Driver/Inc",
+                "${workspaceFolder}/Drivers/STM32L5xx_HAL_Driver/Inc/Legacy",
+                "${workspaceFolder}/Drivers/CMSIS/Device/ST/STM32L5xx/Include",
+                "${workspaceFolder}/Drivers/CMSIS/Include",
+                "${workspaceFolder}/Drivers/CMSIS/RTOS2/Include",
+                "${workspaceFolder}/Drivers/BSP/STM32L5xx_Nucleo",
+                "${workspaceFolder}/Middlewares/Third_Party/FreeRTOS/Source/include",
+                "${workspaceFolder}/Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2",
+                "${workspaceFolder}/Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM33_NTZ/non_secure",
+                "${workspaceFolder}/Middlewares/Third_Party/freemodbus/modbus/include"
+            ],
+            "defines": [
+                "USE_HAL_DRIVER",
+                "STM32L552xx",
+                "DEBUG"
+            ],
+            "compilerPath": "/usr/bin/arm-none-eabi-gcc",
+            "cStandard": "c11",
+            "cppStandard": "c++14",
+            "intelliSenseMode": "gcc-arm",
+            "compilerArgs": [
+                "-mcpu=cortex-m33",
+                "-mthumb",
+                "-mfpu=fpv5-sp-d16",
+                "-mfloat-abi=hard"
+            ]
+        }
+    ],
+    "version": 4
+}
