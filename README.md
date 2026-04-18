@@ -38,7 +38,7 @@ This (future) will be configuralbe in the Modbus registers.
 
 ### LEDs
 There are 3 LED's on the board:
-- RED   - FreeModbus debug for TX in progress
+- RED   - FreeModbus debug for timer enabled
 - BLUE  - TBD
 - GREEN - TBD
 
