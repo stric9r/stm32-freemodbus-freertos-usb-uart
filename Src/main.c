@@ -17,12 +17,12 @@
   */
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
-#include <dma.h>
-#include <gpio.h>
-#include <icache.h>
-#include <lptim.h>
-#include <usart.h>
-#include <usb.h>
+#include "dma.h"
+#include "gpio.h"
+#include "icache.h"
+#include "lptim.h"
+#include "usart.h"
+#include "usb.h"
 #include "main.h"
 #include "cmsis_os.h"
 
@@ -98,7 +98,7 @@ int main(void)
   //MX_DMA_Init();
   MX_ICACHE_Init();
   // Modbus lib will init this MX_USART2_UART_Init();
-  MX_LPTIM1_Init();
+  lptim1_init();
   MX_USB_PCD_Init();
   /* USER CODE BEGIN 2 */
 

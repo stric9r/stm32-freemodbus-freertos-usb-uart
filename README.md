@@ -26,6 +26,8 @@ quick build environment.
 
 VSCode primarily used to do code development.
 
+Admission - I used Claude Pro to help with documentation.  It does it better than me :( But it's a tool so I'll use it to be more efficient.  It does have quirks though.  Proper prompting is key!
+
 ## Features
 This will be a Modbus Slave device that supports RTU and ASCII serial connections.
 
@@ -51,5 +53,5 @@ STM32CubeMX is very helpful for generating a project on the fly but the naming c
 
 - FreeModbus is old, and not really structured for modern MCU's.  But its still popular.  I may do a port of nanoModbus in the future.  All that to say, I don't know if I can make DMA work well here, or if I'd have to make substantial changes to FreeModbus to allow it.  That's all TBD.
 
-- I'm sure there are more but those are the three biggest ones.
+- I'm sure there are more but those are the three biggest ones. I've used the CubeMX to generate a bare bones example with some additions to help with FreeModbus development.  This is my first time using CubeMX and I'm not a fan.  Although it's helpful to some degree but I've heavily edited it.  I will also admit it does help get development done faster, I just have some nitpicks about how it generates code.  
 
