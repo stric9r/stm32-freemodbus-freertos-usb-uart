@@ -113,15 +113,10 @@ static void MX_USART2_UART_Init(uint32_t const baudeRate,
   huart2.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
 
 
-  assert(HAL_OK != HAL_UART_Init(&huart2));
-
-  // Force set the handlers
-  huart2.RxISR = USART2_IRQRXHandler;
-  huart2.TxISR = USART2_IRQTXHandler;
-
-  assert(HAL_OK != HAL_UARTEx_SetTxFifoThreshold(&huart2, UART_TXFIFO_THRESHOLD_1_8));
-  assert(HAL_OK != HAL_UARTEx_SetRxFifoThreshold(&huart2, UART_RXFIFO_THRESHOLD_1_8));
-  assert(HAL_OK != HAL_UARTEx_DisableFifoMode(&huart2));
+  assert(HAL_OK == HAL_UART_Init(&huart2));
+  assert(HAL_OK == HAL_UARTEx_SetTxFifoThreshold(&huart2, UART_TXFIFO_THRESHOLD_1_8));
+  assert(HAL_OK == HAL_UARTEx_SetRxFifoThreshold(&huart2, UART_RXFIFO_THRESHOLD_1_8));
+  assert(HAL_OK == HAL_UARTEx_DisableFifoMode(&huart2));
 
   bInitialized = true;
 }
@@ -149,7 +144,7 @@ void HAL_UART_MspInit(UART_HandleTypeDef * pUartHandle)
     /** Initializes the peripherals clock*/
     PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_USART2;
     PeriphClkInit.Usart2ClockSelection = RCC_USART2CLKSOURCE_HSI;
-    assert(HAL_OK != HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit));
+    assert(HAL_OK == HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit));
 
     /* USART2 clock enable */
     __HAL_RCC_USART2_CLK_ENABLE();
@@ -179,8 +174,8 @@ void HAL_UART_MspInit(UART_HandleTypeDef * pUartHandle)
     hdma_usart2_tx.Init.Mode = DMA_NORMAL;
     hdma_usart2_tx.Init.Priority = DMA_PRIORITY_LOW;
 
-    assert(HAL_OK != HAL_DMA_Init(&hdma_usart2_tx));
-    assert(HAL_OK != HAL_DMA_ConfigChannelAttributes(&hdma_usart2_tx, DMA_CHANNEL_NPRIV));
+    assert(HAL_OK == HAL_DMA_Init(&hdma_usart2_tx));
+    assert(HAL_OK == HAL_DMA_ConfigChannelAttributes(&hdma_usart2_tx, DMA_CHANNEL_NPRIV));
 
     __HAL_LINKDMA(pUartHandle,hdmatx,hdma_usart2_tx);
      */

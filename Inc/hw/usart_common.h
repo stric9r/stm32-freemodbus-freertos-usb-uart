@@ -1,7 +1,7 @@
 /**
   ******************************************************************************
   * @file    usart_common.h
-  * @brief   This file contains common function prototypes to 
+  * @brief   This file contains common function prototypes to
   *          alleviate coupling
   ******************************************************************************
   */
@@ -14,9 +14,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-void USART2_IRQRXHandler(UART_HandleTypeDef *huart);
-void USART2_IRQTXHandler(UART_HandleTypeDef *huart);
 
 
 #ifdef __cplusplus
