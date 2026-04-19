@@ -130,14 +130,14 @@
         uint32_t const isr = MB_SERIAL_INSTANCE->ISR;                             \
         MB_SERIAL_INSTANCE->ICR = USART_ICR_FECF | USART_ICR_NECF                 \
                                   | USART_ICR_ORECF;                              \
-        if ((isr & USART_ISR_RXNE) &&                                       \
-            (MB_SERIAL_INSTANCE->CR1 & USART_CR1_RXNEIE))                 \
+        if ((isr & USART_ISR_RXNE) &&                                             \
+            (MB_SERIAL_INSTANCE->CR1 & USART_CR1_RXNEIE))                         \
         {                                                                         \
             vMBTimerDebugSetLow();                                                \
             pxMBFrameCBByteReceived();                                            \
         }                                                                         \
-        if ((isr & USART_ISR_TXE) &&                                        \
-            (MB_SERIAL_INSTANCE->CR1 & USART_CR1_TXEIE))                  \
+        if ((isr & USART_ISR_TXE) &&                                              \
+            (MB_SERIAL_INSTANCE->CR1 & USART_CR1_TXEIE))                          \
         {                                                                         \
             pxMBFrameCBTransmitterEmpty();                                        \
         }                                                                         \
