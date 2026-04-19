@@ -151,7 +151,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
 static volatile bool isDebuggerAttached(void) 
 {
-    return (CoreDebug->DHCSR & CoreDebug_DHCSR_C_DEBUGEN_Msk) != 0;
+  return (CoreDebug->DHCSR & CoreDebug_DHCSR_C_DEBUGEN_Msk) != 0;
 }
 
 /**
@@ -168,6 +168,7 @@ void Error_Handler(void)
   }
   /* USER CODE END Error_Handler_Debug */
 }
+
 #ifdef USE_FULL_ASSERT
 /**
   * @brief  Reports the name of the source file and the source line number
@@ -178,11 +179,11 @@ void Error_Handler(void)
   */
 void assert_failed(uint8_t *file, uint32_t line)
 {
-	// @todo [2026-4-12] Print to a serial debug port
+    // @todo [2026-4-12] Print to a serial debug port
 
-	if(isDebuggerAttached())
-	{
-		Error_Handler();
-	}
+    if(isDebuggerAttached())
+    {
+      Error_Handler();
+    }
 }
 #endif /* USE_FULL_ASSERT */

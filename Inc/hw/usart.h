@@ -34,10 +34,10 @@ extern UART_HandleTypeDef huart2;
 
 
 void usart_uart_init(uint8_t  const usartNum,
-					           uint32_t const baudRate,
-				             uint8_t  const dataBits,
+                     uint32_t const baudRate,
+                     uint8_t  const dataBits,
                      uint8_t  const stop_bits,
-					           uint8_t  const parity);
+                     uint8_t  const parity);
 
 void usart_uart_bringup(uint8_t const usartNum);
 void usart_uart_teardown(uint8_t const usartNum);
