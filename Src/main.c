@@ -56,7 +56,7 @@ int main(void)
 
   icache_init();
   
-  // Modbus lib will init timers and usart
+  // Modbus lib will init lptimer and usart
  
   // todo [2026-04-18] USB not ready yet
   usb_init();
