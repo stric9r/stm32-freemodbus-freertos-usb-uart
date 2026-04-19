@@ -1,8 +1,9 @@
+/* USER CODE BEGIN Header */
 /**
   ******************************************************************************
-  * @file           : main.h
-  * @brief          : Header for main.c file.
-  *                   This file contains the common defines of the application.
+  * @file    iwdg.h
+  * @brief   This file contains all the function prototypes for
+  *          the iwdg.c file
   ******************************************************************************
   * @attention
   *
@@ -15,40 +16,37 @@
   *
   ******************************************************************************
   */
-
+/* USER CODE END Header */
 /* Define to prevent recursive inclusion -------------------------------------*/
-#ifndef __MAIN_H
-#define __MAIN_H
+#ifndef __IWDG_H__
+#define __IWDG_H__
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /* Includes ------------------------------------------------------------------*/
-#include "stm32l5xx_hal.h"
+#include "main.h"
 
-// @todo [2026-4-12] Rename main.h to common.h or something similar
+/* USER CODE BEGIN Includes */
 
-void Error_Handler(void);
+/* USER CODE END Includes */
 
+extern IWDG_HandleTypeDef hiwdg;
 
-#define GPIO_BUTTON_Pin GPIO_PIN_13
-#define GPIO_BUTTON_GPIO_Port GPIOC
-#define GPIO_GREEN_LED_Pin GPIO_PIN_7
-#define GPIO_GREEN_LED_GPIO_Port GPIOC
-#define GPIO_RED_LED_Pin GPIO_PIN_9
-#define GPIO_RED_LED_GPIO_Port GPIOA
-#define GPIO_MB_USAT_RX_Pin GPIO_PIN_5
-#define GPIO_MB_USAT_RX_GPIO_Port GPIOD
-#define GPIO_MB_USART_RX_Pin GPIO_PIN_6
-#define GPIO_MB_USART_RX_GPIO_Port GPIOD
-#define GPIO_BLUE_LED_Pin GPIO_PIN_7
-#define GPIO_BLUE_LED_GPIO_Port GPIOB
+/* USER CODE BEGIN Private defines */
 
+/* USER CODE END Private defines */
 
+void MX_IWDG_Init(void);
+
+/* USER CODE BEGIN Prototypes */
+
+/* USER CODE END Prototypes */
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* __MAIN_H */
+#endif /* __IWDG_H__ */
+
