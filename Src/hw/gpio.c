@@ -1,4 +1,3 @@
-/* USER CODE BEGIN Header */
 /**
   ******************************************************************************
   * @file    gpio.c
@@ -15,30 +14,33 @@
   * If no LICENSE file comes with this software, it is provided AS-IS.
   *
   ******************************************************************************
-  */
-/* USER CODE END Header */
+*/
 
-/* Includes ------------------------------------------------------------------*/
 #include "gpio.h"
 
-/* USER CODE BEGIN 0 */
+#include <stdbool.h>
+#include <stddef.h>
 
-/* USER CODE END 0 */
 
-/*----------------------------------------------------------------------------*/
-/* Configure GPIO                                                             */
-/*----------------------------------------------------------------------------*/
-/* USER CODE BEGIN 1 */
+static bool bInitialized = false;
 
-/* USER CODE END 1 */
-
-/** Configure pins
-     PC14-OSC32_IN (PC14)   ------> RCC_OSC32_IN
-     PC15-OSC32_OUT (PC15)   ------> RCC_OSC32_OUT
-     PH0-OSC_IN (PH0)   ------> RCC_OSC_IN
-     PH1-OSC_OUT (PH1)   ------> RCC_OSC_OUT
-*/
-void MX_GPIO_Init(void)
+/**
+ * @brief Initialise all GPIO pins for the application.
+ *
+ * Enables port clocks, sets unused pins to analog (no-pull) to minimise
+ * current draw, and configures the active pins listed below.
+ *
+ * Active pin assignments:
+ *   - PC14 / PC15      OSC32_IN / OSC32_OUT  — 32 kHz LSE crystal
+ *   - PH0  / PH1       OSC_IN  / OSC_OUT     — HSE crystal
+ *   - GPIO_GREEN_LED   Push-pull output, low speed, initially low
+ *   - GPIO_RED_LED     Push-pull output, low speed, initially low
+ *   - GPIO_BLUE_LED    Push-pull output, low speed, initially low
+ *   - GPIO_BUTTON      Input, no pull
+ *
+ * Must be called from main() after HAL_Init() and SystemClock_Config().
+ */
+void gpio_init(void)
 {
 
   GPIO_InitTypeDef GPIO_InitStruct = {0};
@@ -178,8 +180,50 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOH, &GPIO_InitStruct);
 
+  bInitilzied = true;
 }
 
-/* USER CODE BEGIN 2 */
+/**
+ * @brief Drive a GPIO pin high.
+ *
+ * Thin wrapper around HAL_GPIO_WritePin() using GPIO_PIN_SET.
+ *
+ * @param port  Pointer to the GPIO peripheral (e.g. GPIOA, GPIOB).
+ * @param pin   Pin bitmask (e.g. GPIO_RED_LED_Pin).
+ */
+void gpio_set_pin(GPIO_TypeDef * const port, uint16_t const pin)
+{
+  assert(NULL != port);
+  assert(bInitilized);
+  HAL_GPIO_WritePin(port, pin, GPIO_PIN_SET);
+}
 
-/* USER CODE END 2 */
+/**
+ * @brief Drive a GPIO pin low.
+ *
+ * Thin wrapper around HAL_GPIO_WritePin() using GPIO_PIN_RESET.
+ *
+ * @param port  Pointer to the GPIO peripheral (e.g. GPIOA, GPIOB).
+ * @param pin   Pin bitmask (e.g. GPIO_RED_LED_Pin).
+ */
+void gpio_clear_pin(GPIO_TypeDef *const port, uint16_t const  pin)
+{
+  assert(NULL != port);
+  assert(bInitilized);
+  HAL_GPIO_WritePin(port, pin, GPIO_PIN_RESET);
+}
+
+/**
+ * @brief Toggle a GPIO pin output state.
+ *
+ * Thin wrapper around HAL_GPIO_TogglePin().
+ *
+ * @param port  Pointer to the GPIO peripheral (e.g. GPIOA, GPIOB).
+ * @param pin   Pin bitmask (e.g. GPIO_BLUE_LED_Pin).
+ */
+void gpio_toggle_pin(GPIO_TypeDef * const port, uint16_t const pin)
+{
+  assert(NULL != port);
+  assert(bInitilized);
+  HAL_GPIO_TogglePin(port, pin);
+}

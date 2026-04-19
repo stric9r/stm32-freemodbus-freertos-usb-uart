@@ -29,21 +29,8 @@ extern "C" {
  */
 #define WD_CHECK_IN_TIME_MS   20000u
 
-/**
- * @brief Initialise and start the IWDG hardware watchdog.
- *
- * Must be called from main() before vTaskStartScheduler().  The IWDG
- * cannot be stopped after this call; watchdog_pet() must be called
- * periodically or the MCU will reset.
- */
-void watchdog_init(void);
 
-/**
- * @brief Refresh the IWDG counter (pet the watchdog).
- *
- * Reloads the IWDG down-counter, preventing a watchdog reset.  Call at
- * an interval no greater than CHECK_IN_TIME_MS.
- */
+void watchdog_init(void);
 void watchdog_pet(void);
 
 #ifdef __cplusplus

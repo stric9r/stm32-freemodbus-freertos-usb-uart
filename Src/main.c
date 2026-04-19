@@ -49,17 +49,17 @@ int main(void)
   watchdog_init();
 
   // Initialize all configured peripherals 
-  MX_GPIO_Init();
+  gpio_init();
 
   // todo [2026-04-18] Use DMA if possible
-  //MX_DMA_Init();
+  //dma_init();
 
-  MX_ICACHE_Init();
+  icache_init();
   
   // Modbus lib will init timers and usart
  
   // todo [2026-04-18] USB not ready yet
-  MX_USB_PCD_Init();
+  usb_init();
 
   system_app_init();
 

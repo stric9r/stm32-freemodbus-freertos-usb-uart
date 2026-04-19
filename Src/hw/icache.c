@@ -1,4 +1,3 @@
-/* USER CODE BEGIN Header */
 /**
   ******************************************************************************
   * @file    icache.c
@@ -16,43 +15,18 @@
   *
   ******************************************************************************
   */
-/* USER CODE END Header */
-/* Includes ------------------------------------------------------------------*/
+
 #include "icache.h"
 
-/* USER CODE BEGIN 0 */
-
-/* USER CODE END 0 */
+#include "assert.h"
 
 /* ICACHE init function */
-void MX_ICACHE_Init(void)
+void icache_init(void)
 {
-
-  /* USER CODE BEGIN ICACHE_Init 0 */
-
-  /* USER CODE END ICACHE_Init 0 */
-
-  /* USER CODE BEGIN ICACHE_Init 1 */
-
-  /* USER CODE END ICACHE_Init 1 */
-
   /** Enable instruction cache in 1-way (direct mapped cache)
   */
-  if (HAL_ICACHE_ConfigAssociativityMode(ICACHE_1WAY) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  if (HAL_ICACHE_Enable() != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN ICACHE_Init 2 */
-
-  /* USER CODE END ICACHE_Init 2 */
-
+  assert(HAL_OK == HAL_ICACHE_ConfigAssociativityMode(ICACHE_1WAY));
+  assert(HAL_OK == HAL_ICACHE_Enable());
 }
 
-/* USER CODE BEGIN 1 */
-
-/* USER CODE END 1 */
 
