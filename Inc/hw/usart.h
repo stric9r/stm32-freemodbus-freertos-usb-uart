@@ -42,10 +42,12 @@ void usart_uart_init(uint8_t  const usartNum,
 void usart_uart_bringup(uint8_t const usartNum);
 void usart_uart_teardown(uint8_t const usartNum);
 
+void usart_uart_enable_rx(uint8_t const usartNum, bool const bEnable);
+void usart_uart_enable_rx(uint8_t const usartNum, bool const bEnable);
+
 static inline void usart_uart2_set_byte(uint8_t const byte){ USART2->TDR = byte;};
 static inline uint8_t usart_uart2_get_byte(void){ return USART2->RDR;};
 
-UART_HandleTypeDef * usart_get_handle(uint8_t const usartNum);
 
 #ifdef __cplusplus
 }

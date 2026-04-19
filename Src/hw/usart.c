@@ -16,11 +16,9 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-static bool bInitialized = false;
-
 
 UART_HandleTypeDef huart2;
-UART_HandleTypeDef * const pHandle = &huart2;
+static UART_HandleTypeDef * const pHandle = &huart2;
 
 // @todo [2026-4-12] Can we utilize DMA here?  Freemodbus may need modification.
 DMA_HandleTypeDef hdma_usart2_tx;
@@ -112,13 +110,15 @@ static void MX_USART2_UART_Init(uint32_t const baudeRate,
   // @todo [2026-4-12] Create a feature to enable auto baudrate detection
   huart2.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
 
-
   assert(HAL_OK == HAL_UART_Init(&huart2));
   assert(HAL_OK == HAL_UARTEx_SetTxFifoThreshold(&huart2, UART_TXFIFO_THRESHOLD_1_8));
   assert(HAL_OK == HAL_UARTEx_SetRxFifoThreshold(&huart2, UART_RXFIFO_THRESHOLD_1_8));
   assert(HAL_OK == HAL_UARTEx_DisableFifoMode(&huart2));
 
-  bInitialized = true;
+  // todo [2026-4-19] Bug usart
+  // Can't use a b_initialized as the MspInit is called via HAL_UART_Init.
+  // Need better way.  Also I think modbus enable/disable functionality is going
+  // to be different.
 }
 
 /**
@@ -132,8 +132,6 @@ static void MX_USART2_UART_Init(uint32_t const baudeRate,
  */
 void HAL_UART_MspInit(UART_HandleTypeDef * pUartHandle)
 {
-
-  assert(bInitialized);
   assert(NULL != pUartHandle);
 
   GPIO_InitTypeDef GPIO_InitStruct = {0};
@@ -195,7 +193,6 @@ void HAL_UART_MspInit(UART_HandleTypeDef * pUartHandle)
  */
 void HAL_UART_MspDeInit(UART_HandleTypeDef * pUartHandle)
 {
-
   assert(NULL != pUartHandle);
 
 
@@ -212,11 +209,6 @@ void HAL_UART_MspDeInit(UART_HandleTypeDef * pUartHandle)
     PD6     ------> USART2_RX
     */
     HAL_GPIO_DeInit(GPIOD, GPIO_MB_USAT_RX_Pin|GPIO_MB_USART_RX_Pin);
-
-    /* USART2 DMA DeInit */
-    /* @todo [2026-4-12] Can we utilize DMA here?  Freemodbus may need modification.
-    HAL_DMA_DeInit(uartHandle->hdmatx);
-    */
   }
 }
 
@@ -298,24 +290,58 @@ void usart_uart_teardown(uint8_t const usartNum)
 }
 
 /**
- * @brief Retrieve the HAL UART handle for a given USART instance.
+ * @brief Gate the USART RX interrupt (RXNEIE bit in CR1).
  *
- * @param usartNum USART instance number (only 2 is supported).
- * @return Pointer to the UART_HandleTypeDef, or NULL if the number is invalid.
+ * Sets or clears USART_CR1_RXNEIE directly in the peripheral register.
+ * The NVIC line for the USART remains active — only the per-interrupt
+ * enable bit is touched, which is the correct granularity for Modbus
+ * RX/TX direction switching on a half-duplex RS-485 bus.
+ *
+ * @param usartNum  USART instance number (only 2 is supported).
+ * @param bEnable   true  — arm the RX interrupt (RXNEIE = 1).
+ *                  false — mask the RX interrupt (RXNEIE = 0).
  */
-UART_HandleTypeDef * usart_get_handle(uint8_t const usartNum)
+void usart_uart_enable_rx(uint8_t const usartNum, bool const bEnable)
 {
-  UART_HandleTypeDef * pAddress = NULL;
-
+  // @todo [2026-4-12] Protect USART with a mutex
   if(2u == usartNum)
   {
-    pAddress = pHandle;
+    if(bEnable)
+    {
+      USART2->CR1 |= USART_CR1_RXNEIE;
+    }
+    else
+    {
+      USART2->CR1 &= ~USART_CR1_RXNEIE;
+    }
   }
   else
   {
-    bool const bUsartInvalid = false;
-    assert(bUsartInvalid);
+    bool bInvalidUsart = false;
+    assert(bInvalidUsart);
   }
+}
 
-  return pAddress;
+/**
+ * @brief Disable TX interrupt.
+ */
+void usart_uart_enable_tx(uint8_t const usartNum, bool const bEnable)
+{
+  // @todo [2026-4-12] Protect USART with a mutex
+  if(2u == usartNum)
+  {
+    if(bEnable)
+    {
+      USART2->CR1 |= USART_CR1_TXEIE;
+    }
+    else
+    {
+      USART2->CR1 &= ~USART_CR1_TXEIE;
+    }
+  }
+  else
+  {
+    bool bInvalidUsart = false;
+    assert(bInvalidUsart);
+  }
 }
