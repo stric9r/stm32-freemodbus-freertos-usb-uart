@@ -16,6 +16,7 @@
   */
 
 #include "main.h"
+#include "system.h"
 
 #include "dma.h"
 #include "gpio.h"
@@ -25,7 +26,6 @@
 #include "usb.h"
 #include "watchdog.h"
 
-#include "app_freertos.h"
 #include "FreeRTOS.h"
 #include "task.h"
 
@@ -61,7 +61,7 @@ int main(void)
   // todo [2026-04-18] USB not ready yet
   MX_USB_PCD_Init();
 
-  app_freertos_init();
+  system_app_init();
 
   // Start scheduler 
   vTaskStartScheduler();

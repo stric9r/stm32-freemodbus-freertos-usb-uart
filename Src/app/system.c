@@ -1,6 +1,6 @@
 /**
   ******************************************************************************
-  * File Name          : freertos.c
+  * File Name          : system.c
   * Description        : Code for freertos applications
   ******************************************************************************
   * @attention
@@ -14,7 +14,7 @@
   *
   ******************************************************************************
   */
-#include "app_freertos.h"
+#include "system.h"
 
 #include "FreeRTOS.h"
 #include "task.h"
@@ -41,11 +41,11 @@ static void defaultTask(void *argument)
     (void)argument;
     for (;;)
     {
-        vTaskDelay(pdMS_TO_TICKS(1));
+        vTaskDelay(pdMS_TO_TICKS(5000));
     }
 }
 
-void app_freertos_init(void)
+void system_app_init(void)
 {
     defaultTaskHandle = xTaskCreateStatic(
         defaultTask,

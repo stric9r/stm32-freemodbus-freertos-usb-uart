@@ -1,5 +1,5 @@
-#ifndef APP_FREERTOS_H
-#define APP_FREERTOS_H
+#ifndef SYSTEM_H
+#define SYSTEM_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -15,9 +15,9 @@ extern "C" {
 #define MODBUS_TASK_PRIORITY      (5)
 
 
-void app_freertos_init(void);
+void system_app_init(void);
 
 #ifdef __cplusplus
 }
 #endif
-#endif /* APP_FREERTOS_H */
+#endif /* SYSTEM_H */

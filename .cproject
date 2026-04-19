@@ -46,9 +46,9 @@
 									<listOptionValue builtIn="false" value="../Src/port"/>
 									<listOptionValue builtIn="false" value="../Middlewares/Third_Party/freemodbus/modbus/include"/>
 									<listOptionValue builtIn="false" value="../Inc/hw"/>
-									<listOptionValue builtIn="false" value="../Inc/rtos"/>
 									<listOptionValue builtIn="false" value="../Inc/modbus"/>
 									<listOptionValue builtIn="false" value="../Middlewares/Third_Party/freemodbus/modbus/rtu"/>
+									<listOptionValue builtIn="false" value="../Inc/app"/>
 								</option>
 								<inputType id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.assembler.input.631146008" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.assembler.input"/>
 							</tool>
@@ -73,10 +73,10 @@
 									<listOptionValue builtIn="false" value="../Middlewares/Third_Party/freemodbus/modbus/include"/>
 									<listOptionValue builtIn="false" value="../Src/port"/>
 									<listOptionValue builtIn="false" value="../Inc/hw"/>
-									<listOptionValue builtIn="false" value="../Inc/rtos"/>
 									<listOptionValue builtIn="false" value="../Inc/modbus"/>
 									<listOptionValue builtIn="false" value="../Middlewares/Third_Party/freemodbus/modbus/ascii"/>
 									<listOptionValue builtIn="false" value="../Middlewares/Third_Party/freemodbus/modbus/rtu"/>
+									<listOptionValue builtIn="false" value="../Inc/app"/>
 								</option>
 								<inputType id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c.760981502" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c"/>
 							</tool>
@@ -106,7 +106,7 @@
 					</folderInfo>
 					<sourceEntries>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Drivers"/>
-						<entry excluding="Third_Party/freemodbus/doc|Third_Party/freemodbus/demo" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Middlewares"/>
+						<entry excluding="Third_Party/freemodbus/demo|Third_Party/freemodbus/doc" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Middlewares"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Src"/>
 					</sourceEntries>
 				</configuration>
@@ -154,10 +154,10 @@
 									<listOptionValue builtIn="false" value="../Drivers/CMSIS/Include"/>
 									<listOptionValue builtIn="false" value="../Src/port"/>
 									<listOptionValue builtIn="false" value="../Inc/hw"/>
-									<listOptionValue builtIn="false" value="../Inc/rtos"/>
 									<listOptionValue builtIn="false" value="../Inc/modbus"/>
 									<listOptionValue builtIn="false" value="../Middlewares/Third_Party/freemodbus/modbus/include"/>
 									<listOptionValue builtIn="false" value="../Middlewares/Third_Party/freemodbus/modbus/rtu"/>
+									<listOptionValue builtIn="false" value="../Inc/app"/>
 								</option>
 								<inputType id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.assembler.input.543797659" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.assembler.input"/>
 							</tool>
@@ -180,12 +180,12 @@
 									<listOptionValue builtIn="false" value="../Drivers/CMSIS/Include"/>
 									<listOptionValue builtIn="false" value="../Src/port"/>
 									<listOptionValue builtIn="false" value="../Inc/hw"/>
-									<listOptionValue builtIn="false" value="../Inc/rtos"/>
 									<listOptionValue builtIn="false" value="../Inc/modbus"/>
 									<listOptionValue builtIn="false" value="../Middlewares/Third_Party/freemodbus/modbus/include"/>
 									<listOptionValue builtIn="false" value="../Middlewares/Third_Party/freemodbus/include/rtu"/>
 									<listOptionValue builtIn="false" value="../Middlewares/Third_Party/freemodbus/include/ascii"/>
 									<listOptionValue builtIn="false" value="../Middlewares/Third_Party/freemodbus/modbus/rtu"/>
+									<listOptionValue builtIn="false" value="../Inc/app"/>
 								</option>
 								<inputType id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c.232073326" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c"/>
 							</tool>
@@ -213,7 +213,7 @@
 					</folderInfo>
 					<sourceEntries>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Drivers"/>
-						<entry excluding="Third_Party/freemodbus/doc|Third_Party/freemodbus/demo" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Middlewares"/>
+						<entry excluding="Third_Party/freemodbus/demo|Third_Party/freemodbus/doc" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Middlewares"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Src"/>
 					</sourceEntries>
 				</configuration>
