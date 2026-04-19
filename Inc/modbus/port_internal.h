@@ -144,7 +144,7 @@
     }
 
 /* Debug helper functions */
-#if MB_TIMER_DEBUG == 1
+#if MB_TIMER_DEBUG_RED == 1
 static inline void vMBTimerDebugSetHigh( void )
 {
     HAL_GPIO_WritePin(GPIO_RED_LED_GPIO_Port, GPIO_RED_LED_Pin, GPIO_PIN_SET);

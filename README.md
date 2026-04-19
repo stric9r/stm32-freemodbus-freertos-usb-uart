@@ -40,8 +40,8 @@ This (future) will be configuralbe in the Modbus registers.
 
 ### LEDs
 There are 3 LED's on the board:
-- RED   - FreeModbus debug for timer enabled
-- BLUE  - TBD
+- RED   - FreeModbus debug for timer enabled, will set/clear LED when timer is enabled/disabled
+- BLUE  - Toggled when watchdog is pet 
 - GREEN - TBD
 
 ## Building
@@ -161,8 +161,8 @@ toolchain installation is required.
 ```
 
 ## Configuration
-MB_TIMER_DEBUG == 1 will turn on RED LED when modbus timer is active
-
+MB_TIMER_DEBUG_RED == 1 will turn on/off RED LED when modbus timer is enabled/disabled
+WD_DEBUG_BLUE == 1 will toggle every time the watchdog is pet
 ## Versions
 
 | Tool / Library       | Version      |
