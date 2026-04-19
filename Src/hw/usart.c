@@ -16,19 +16,17 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-static bool bInitialized = false;
-
 
 UART_HandleTypeDef huart2;
-UART_HandleTypeDef * const pHandle = &huart2;
+static UART_HandleTypeDef * const pHandle = &huart2;
 
 // @todo [2026-4-12] Can we utilize DMA here?  Freemodbus may need modification.
 DMA_HandleTypeDef hdma_usart2_tx;
 
 static void MX_USART2_UART_Init(uint32_t const baudeRate,
-		                            uint8_t  const dataBits,
+                                uint8_t  const dataBits,
                                 uint8_t  const stopBits,
-				       		              uint8_t  const parity);
+                                uint8_t  const parity);
 
 /**
  * @brief Configure and initialize the USART2 HAL handle.
@@ -43,9 +41,9 @@ static void MX_USART2_UART_Init(uint32_t const baudeRate,
  * @param parity    Parity: 0 = none, 1 = odd, 2 = even.
  */
 static void MX_USART2_UART_Init(uint32_t const baudeRate,
-		                            uint8_t  const dataBits,
+                                uint8_t  const dataBits,
                                 uint8_t  const stopBits,
-				       		              uint8_t  const parity)
+                                uint8_t  const parity)
 {
 
   huart2.Instance = USART2;
@@ -54,20 +52,20 @@ static void MX_USART2_UART_Init(uint32_t const baudeRate,
 
   if(7u == dataBits)
   {
-	  huart2.Init.WordLength = UART_WORDLENGTH_7B;
+    huart2.Init.WordLength = UART_WORDLENGTH_7B;
   }
   else if(8u == dataBits)
   {
-	  huart2.Init.WordLength = UART_WORDLENGTH_8B;
+    huart2.Init.WordLength = UART_WORDLENGTH_8B;
   }
   else if(9u == dataBits)
   {
-	  huart2.Init.WordLength = UART_WORDLENGTH_9B;
+    huart2.Init.WordLength = UART_WORDLENGTH_9B;
   }
   else
   {
-	  bool const bBadWordLength = false;
-	  assert(bBadWordLength);
+    bool const bBadWordLength = false;
+    assert(bBadWordLength);
   }
 
   // Only support 1 and 2 stop bits right now
@@ -87,20 +85,20 @@ static void MX_USART2_UART_Init(uint32_t const baudeRate,
 
   if(0u == parity)
   {
-	  huart2.Init.Parity = UART_PARITY_NONE;
+    huart2.Init.Parity = UART_PARITY_NONE;
   }
   else if(1u == parity)
   {
-	  huart2.Init.Parity = UART_PARITY_ODD;
+    huart2.Init.Parity = UART_PARITY_ODD;
   }
   else if(2u == parity)
   {
-	  huart2.Init.Parity = UART_PARITY_EVEN;
+    huart2.Init.Parity = UART_PARITY_EVEN;
   }
   else
   {
-	  bool const bBadParity = false;
-	  assert(bBadParity);
+    bool const bBadParity = false;
+    assert(bBadParity);
   }
 
   huart2.Init.Mode = UART_MODE_TX_RX;
@@ -112,13 +110,15 @@ static void MX_USART2_UART_Init(uint32_t const baudeRate,
   // @todo [2026-4-12] Create a feature to enable auto baudrate detection
   huart2.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
 
-
   assert(HAL_OK == HAL_UART_Init(&huart2));
   assert(HAL_OK == HAL_UARTEx_SetTxFifoThreshold(&huart2, UART_TXFIFO_THRESHOLD_1_8));
   assert(HAL_OK == HAL_UARTEx_SetRxFifoThreshold(&huart2, UART_RXFIFO_THRESHOLD_1_8));
   assert(HAL_OK == HAL_UARTEx_DisableFifoMode(&huart2));
 
-  bInitialized = true;
+  // todo [2026-4-19] Bug usart
+  // Can't use a b_initialized as the MspInit is called via HAL_UART_Init.
+  // Need better way.  Also I think modbus enable/disable functionality is going
+  // to be different.
 }
 
 /**
@@ -132,8 +132,6 @@ static void MX_USART2_UART_Init(uint32_t const baudeRate,
  */
 void HAL_UART_MspInit(UART_HandleTypeDef * pUartHandle)
 {
-
-  assert(bInitialized);
   assert(NULL != pUartHandle);
 
   GPIO_InitTypeDef GPIO_InitStruct = {0};
@@ -161,24 +159,24 @@ void HAL_UART_MspInit(UART_HandleTypeDef * pUartHandle)
     GPIO_InitStruct.Alternate = GPIO_AF7_USART2;
     HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
 
-    /* USART2 DMA Init */
-    /* USART2_TX Init */
-    /* @todo [2026-4-12] Can we utilize DMA here?  Freemodbus may need modification.
-    hdma_usart2_tx.Instance = DMA1_Channel3;
-    hdma_usart2_tx.Init.Request = DMA_REQUEST_USART2_TX;
-    hdma_usart2_tx.Init.Direction = DMA_MEMORY_TO_PERIPH;
-    hdma_usart2_tx.Init.PeriphInc = DMA_PINC_DISABLE;
-    hdma_usart2_tx.Init.MemInc = DMA_MINC_ENABLE;
-    hdma_usart2_tx.Init.PeriphDataAlignment = DMA_PDATAALIGN_BYTE;
-    hdma_usart2_tx.Init.MemDataAlignment = DMA_MDATAALIGN_BYTE;
-    hdma_usart2_tx.Init.Mode = DMA_NORMAL;
-    hdma_usart2_tx.Init.Priority = DMA_PRIORITY_LOW;
+  /* USART2 DMA Init */
+  /* USART2_TX Init */
+  /* @todo [2026-4-12] Can we utilize DMA here?  Freemodbus may need modification.
+  hdma_usart2_tx.Instance = DMA1_Channel3;
+  hdma_usart2_tx.Init.Request = DMA_REQUEST_USART2_TX;
+  hdma_usart2_tx.Init.Direction = DMA_MEMORY_TO_PERIPH;
+  hdma_usart2_tx.Init.PeriphInc = DMA_PINC_DISABLE;
+  hdma_usart2_tx.Init.MemInc = DMA_MINC_ENABLE;
+  hdma_usart2_tx.Init.PeriphDataAlignment = DMA_PDATAALIGN_BYTE;
+  hdma_usart2_tx.Init.MemDataAlignment = DMA_MDATAALIGN_BYTE;
+  hdma_usart2_tx.Init.Mode = DMA_NORMAL;
+  hdma_usart2_tx.Init.Priority = DMA_PRIORITY_LOW;
 
-    assert(HAL_OK == HAL_DMA_Init(&hdma_usart2_tx));
-    assert(HAL_OK == HAL_DMA_ConfigChannelAttributes(&hdma_usart2_tx, DMA_CHANNEL_NPRIV));
+  assert(HAL_OK == HAL_DMA_Init(&hdma_usart2_tx));
+  assert(HAL_OK == HAL_DMA_ConfigChannelAttributes(&hdma_usart2_tx, DMA_CHANNEL_NPRIV));
 
-    __HAL_LINKDMA(pUartHandle,hdmatx,hdma_usart2_tx);
-     */
+  __HAL_LINKDMA(pUartHandle,hdmatx,hdma_usart2_tx);
+    */
 
     HAL_NVIC_SetPriority(USART2_IRQn, 5, 0);
     HAL_NVIC_EnableIRQ(USART2_IRQn);
@@ -195,14 +193,13 @@ void HAL_UART_MspInit(UART_HandleTypeDef * pUartHandle)
  */
 void HAL_UART_MspDeInit(UART_HandleTypeDef * pUartHandle)
 {
-
   assert(NULL != pUartHandle);
 
 
   if(USART2 == pUartHandle->Instance)
   {
-	/* USART2 interrupt Deinit */
-	HAL_NVIC_DisableIRQ(USART2_IRQn);
+    /* USART2 interrupt Deinit */
+    HAL_NVIC_DisableIRQ(USART2_IRQn);
 
     /* Peripheral clock disable */
     __HAL_RCC_USART2_CLK_DISABLE();
@@ -212,11 +209,6 @@ void HAL_UART_MspDeInit(UART_HandleTypeDef * pUartHandle)
     PD6     ------> USART2_RX
     */
     HAL_GPIO_DeInit(GPIOD, GPIO_MB_USAT_RX_Pin|GPIO_MB_USART_RX_Pin);
-
-    /* USART2 DMA DeInit */
-    /* @todo [2026-4-12] Can we utilize DMA here?  Freemodbus may need modification.
-    HAL_DMA_DeInit(uartHandle->hdmatx);
-    */
   }
 }
 
@@ -233,23 +225,23 @@ void HAL_UART_MspDeInit(UART_HandleTypeDef * pUartHandle)
  * @param parity    Parity: 0 = none, 1 = odd, 2 = even.
  */
 void usart_uart_init(uint8_t  const usartNum,
-					           uint32_t const baudRate,
-				             uint8_t  const dataBits,
+                     uint32_t const baudRate,
+                     uint8_t  const dataBits,
                      uint8_t  const stop_bits,
-					           uint8_t  const parity)
+                     uint8_t  const parity)
 {
 
   (void)hdma_usart2_tx;
   
-	if(2u == usartNum)
-	{
-		MX_USART2_UART_Init(baudRate, dataBits, stop_bits, parity);
-	}
-	else
-	{
-		bool bInvalidUsart = false;
-		assert(bInvalidUsart);
-	}
+  if(2u == usartNum)
+  {
+    MX_USART2_UART_Init(baudRate, dataBits, stop_bits, parity);
+  }
+  else
+  {
+    bool bInvalidUsart = false;
+    assert(bInvalidUsart);
+  }
 
 }
 
@@ -264,16 +256,16 @@ void usart_uart_init(uint8_t  const usartNum,
  */
 void usart_uart_bringup(uint8_t const usartNum)
 {
-	// @todo [2026-4-12] Protect USART with a mutex
-	if(2u == usartNum)
-	{
-		HAL_UART_MspInit(&huart2);
-	}
-	else
-	{
-		bool bInvalidUsart = false;
-		assert(bInvalidUsart);
-	}
+  // @todo [2026-4-12] Protect USART with a mutex
+  if(2u == usartNum)
+  {
+    HAL_UART_MspInit(&huart2);
+  }
+  else
+  {
+    bool bInvalidUsart = false;
+    assert(bInvalidUsart);
+  }
 }
 /**
  * @brief Disable a USART peripheral and release its resources.
@@ -285,37 +277,71 @@ void usart_uart_bringup(uint8_t const usartNum)
  */
 void usart_uart_teardown(uint8_t const usartNum)
 {
-	// @todo [2026-4-12] Protect USART with a mutex
-	if(2u == usartNum)
-	{
-		HAL_UART_MspDeInit(&huart2);
-	}
-	else
-	{
-		bool bInvalidUsart = false;
-		assert(bInvalidUsart);
-	}
+  // @todo [2026-4-12] Protect USART with a mutex
+  if(2u == usartNum)
+  {
+    HAL_UART_MspDeInit(&huart2);
+  }
+  else
+  {
+      bool bInvalidUsart = false;
+      assert(bInvalidUsart);
+  }
 }
 
 /**
- * @brief Retrieve the HAL UART handle for a given USART instance.
+ * @brief Gate the USART RX interrupt (RXNEIE bit in CR1).
  *
- * @param usartNum USART instance number (only 2 is supported).
- * @return Pointer to the UART_HandleTypeDef, or NULL if the number is invalid.
+ * Sets or clears USART_CR1_RXNEIE directly in the peripheral register.
+ * The NVIC line for the USART remains active — only the per-interrupt
+ * enable bit is touched, which is the correct granularity for Modbus
+ * RX/TX direction switching on a half-duplex RS-485 bus.
+ *
+ * @param usartNum  USART instance number (only 2 is supported).
+ * @param bEnable   true  — arm the RX interrupt (RXNEIE = 1).
+ *                  false — mask the RX interrupt (RXNEIE = 0).
  */
-UART_HandleTypeDef * usart_get_handle(uint8_t const usartNum)
+void usart_uart_enable_rx(uint8_t const usartNum, bool const bEnable)
 {
-	UART_HandleTypeDef * pAddress = NULL;
+  // @todo [2026-4-12] Protect USART with a mutex
+  if(2u == usartNum)
+  {
+    if(bEnable)
+    {
+      USART2->CR1 |= USART_CR1_RXNEIE;
+    }
+    else
+    {
+      USART2->CR1 &= ~USART_CR1_RXNEIE;
+    }
+  }
+  else
+  {
+    bool bInvalidUsart = false;
+    assert(bInvalidUsart);
+  }
+}
 
-	if(2u == usartNum)
-	{
-	     pAddress = pHandle;
-	}
-	else
-	{
-		bool const bUsartInvalid = false;
-		assert(bUsartInvalid);
-	}
-
-	return pAddress;
+/**
+ * @brief Disable TX interrupt.
+ */
+void usart_uart_enable_tx(uint8_t const usartNum, bool const bEnable)
+{
+  // @todo [2026-4-12] Protect USART with a mutex
+  if(2u == usartNum)
+  {
+    if(bEnable)
+    {
+      USART2->CR1 |= USART_CR1_TXEIE;
+    }
+    else
+    {
+      USART2->CR1 &= ~USART_CR1_TXEIE;
+    }
+  }
+  else
+  {
+    bool bInvalidUsart = false;
+    assert(bInvalidUsart);
+  }
 }

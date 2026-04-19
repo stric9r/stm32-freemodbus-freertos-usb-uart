@@ -20,7 +20,13 @@
 
 #include "watchdog.h"
 
+#if WD_DEBUG_BLUE
+#include "gpio.h"
+#include "main.h"
+#endif
+
 #include "stm32l5xx_hal.h"   /* RCC LSI enable, CMSIS device header */
+
 
 #include <assert.h>
 #include <stdbool.h>
@@ -59,4 +65,7 @@ void watchdog_pet(void)
 
     HAL_IWDG_Refresh(&hiwdg);
 
+#if WD_DEBUG_BLUE
+    gpio_toggle_pin(GPIO_BLUE_LED_GPIO_Port, GPIO_BLUE_LED_Pin);
+#endif
 }

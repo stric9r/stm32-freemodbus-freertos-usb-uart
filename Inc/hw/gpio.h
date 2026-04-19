@@ -28,19 +28,11 @@ extern "C" {
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 
-/* USER CODE BEGIN Includes */
 
-/* USER CODE END Includes */
-
-/* USER CODE BEGIN Private defines */
-
-/* USER CODE END Private defines */
-
-void MX_GPIO_Init(void);
-
-/* USER CODE BEGIN Prototypes */
-
-/* USER CODE END Prototypes */
+void gpio_init(void);
+void gpio_set_pin(GPIO_TypeDef * const port, uint16_t const pin);
+void gpio_clear_pin(GPIO_TypeDef * const port, uint16_t const pin);
+void gpio_toggle_pin(GPIO_TypeDef * const port, uint16_t const  pin);
 
 #ifdef __cplusplus
 }

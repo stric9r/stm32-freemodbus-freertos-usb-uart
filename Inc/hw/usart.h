@@ -24,28 +24,31 @@
 extern "C" {
 #endif
 
-/* Includes ------------------------------------------------------------------*/
+
 #include "stm32l5xx_hal.h"
 #include "main.h"
 
+#include <stdbool.h>
 
 // @todo [2026-4-12] Decouple how the handle is passed around.  It's ugly.
 extern UART_HandleTypeDef huart2;
 
 
 void usart_uart_init(uint8_t  const usartNum,
-					           uint32_t const baudRate,
-				             uint8_t  const dataBits,
+                     uint32_t const baudRate,
+                     uint8_t  const dataBits,
                      uint8_t  const stop_bits,
-					           uint8_t  const parity);
+                     uint8_t  const parity);
 
 void usart_uart_bringup(uint8_t const usartNum);
 void usart_uart_teardown(uint8_t const usartNum);
 
+void usart_uart_enable_rx(uint8_t const usartNum, bool const bEnable);
+void usart_uart_enable_rx(uint8_t const usartNum, bool const bEnable);
+
 static inline void usart_uart2_set_byte(uint8_t const byte){ USART2->TDR = byte;};
 static inline uint8_t usart_uart2_get_byte(void){ return USART2->RDR;};
 
-UART_HandleTypeDef * usart_get_handle(uint8_t const usartNum);
 
 #ifdef __cplusplus
 }
