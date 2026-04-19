@@ -18,6 +18,8 @@
 
 #include "gpio.h"
 
+#include <assert.h>
+
 #include <stdbool.h>
 #include <stddef.h>
 
@@ -107,23 +109,23 @@ void gpio_init(void)
 
   /*Configure GPIO pins : PA0 PA1 PA2 PA3
                            PA4 PA5 PA6 PA7
-                           PA8 PA10 PA13 PA14
-                           PA15 */
+                           PA8 PA10 PA15 */
+  // Leave PA13 and PA14 alone, as they are SWDIO and SWCLK respectively
   GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_3
                           |GPIO_PIN_4|GPIO_PIN_5|GPIO_PIN_6|GPIO_PIN_7
-                          |GPIO_PIN_8|GPIO_PIN_10|GPIO_PIN_13|GPIO_PIN_14
-                          |GPIO_PIN_15;
+                          |GPIO_PIN_8|GPIO_PIN_10|GPIO_PIN_15;
   GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /*Configure GPIO pins : PB0 PB1 PB2 PB10
                            PB11 PB13 PB14 PB15
-                           PB3 PB4 PB5 PB6
+                           PB4 PB5 PB6
                            PB8 PB9 */
+  // Leave PB3 alone as its SWO SB140 on the board needs to be shorted to use this
   GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_10
                           |GPIO_PIN_11|GPIO_PIN_13|GPIO_PIN_14|GPIO_PIN_15
-                          |GPIO_PIN_3|GPIO_PIN_4|GPIO_PIN_5|GPIO_PIN_6
+                          |GPIO_PIN_4|GPIO_PIN_5|GPIO_PIN_6
                           |GPIO_PIN_8|GPIO_PIN_9;
   GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
@@ -180,7 +182,7 @@ void gpio_init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOH, &GPIO_InitStruct);
 
-  bInitilzied = true;
+  bInitialized = true;
 }
 
 /**
@@ -194,7 +196,7 @@ void gpio_init(void)
 void gpio_set_pin(GPIO_TypeDef * const port, uint16_t const pin)
 {
   assert(NULL != port);
-  assert(bInitilized);
+  assert(bInitialized);
   HAL_GPIO_WritePin(port, pin, GPIO_PIN_SET);
 }
 
@@ -209,7 +211,7 @@ void gpio_set_pin(GPIO_TypeDef * const port, uint16_t const pin)
 void gpio_clear_pin(GPIO_TypeDef *const port, uint16_t const  pin)
 {
   assert(NULL != port);
-  assert(bInitilized);
+  assert(bInitialized);
   HAL_GPIO_WritePin(port, pin, GPIO_PIN_RESET);
 }
 
@@ -224,6 +226,6 @@ void gpio_clear_pin(GPIO_TypeDef *const port, uint16_t const  pin)
 void gpio_toggle_pin(GPIO_TypeDef * const port, uint16_t const pin)
 {
   assert(NULL != port);
-  assert(bInitilized);
+  assert(bInitialized);
   HAL_GPIO_TogglePin(port, pin);
 }
