@@ -28,7 +28,6 @@ BOOL xMBPortSerialInit( UCHAR ucPORT, ULONG ulBaudRate, UCHAR ucDataBits,
 
     MB_SERIAL_INIT((uint32_t)ulBaudRate, (uint8_t)ucDataBits,
                    (uint8_t)ucStopBits, parity);
-    MB_SERIAL_ENABLE();
 
     return TRUE;
 }
