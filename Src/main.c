@@ -23,6 +23,7 @@
 #include "lptim.h"
 #include "usart.h"
 #include "usb.h"
+#include "watchdog.h"
 
 #include "app_freertos.h"
 #include "FreeRTOS.h"
@@ -31,7 +32,7 @@
 #include <stdbool.h>
 
 static void SystemClock_Config(void);
-static bool isDebuggerAttached(void);
+static volatile bool isDebuggerAttached(void);
 
 /**
   * @brief  The application entry point.
@@ -44,6 +45,8 @@ int main(void)
 
   // Configure the system clock 
   SystemClock_Config();
+
+  watchdog_init();
 
   // Initialize all configured peripherals 
   MX_GPIO_Init();
@@ -146,7 +149,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 }
 
 
-static bool isDebuggerAttached(void) 
+static volatile bool isDebuggerAttached(void) 
 {
     return (CoreDebug->DHCSR & CoreDebug_DHCSR_C_DEBUGEN_Msk) != 0;
 }

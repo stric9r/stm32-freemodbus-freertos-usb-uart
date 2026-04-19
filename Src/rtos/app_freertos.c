@@ -20,13 +20,19 @@
 #include "task.h"
 
 #include "main.h"
+#include "modbus_task.h"
 
-#define DEFAULT_TASK_STACK_SIZE  128u
-
+/* Default task */
 static TaskHandle_t defaultTaskHandle;
 static StaticTask_t defaultTaskTcb;
 static StackType_t  defaultTaskStack[DEFAULT_TASK_STACK_SIZE];
 
+/* Modbus task */
+static TaskHandle_t modbusTaskHandle;
+static StaticTask_t modbusTaskTcb;
+static StackType_t  modbusTaskStack[MODBUS_TASK_STACK_SIZE];
+
+/* Idle task — required by configSUPPORT_STATIC_ALLOCATION */
 static StaticTask_t idleTaskTcb;
 static StackType_t  idleTaskStack[configMINIMAL_STACK_SIZE];
 
@@ -46,9 +52,18 @@ void app_freertos_init(void)
         "defaultTask",
         DEFAULT_TASK_STACK_SIZE,
         NULL,
-        tskIDLE_PRIORITY + 1u,
+        DEFAULT_TASK_PRIORITY,
         defaultTaskStack,
         &defaultTaskTcb);
+
+    modbusTaskHandle = xTaskCreateStatic(
+        modbus_task,
+        "modbusTask",
+        MODBUS_TASK_STACK_SIZE,
+        NULL,
+        MODBUS_TASK_PRIORITY,
+        modbusTaskStack,
+        &modbusTaskTcb);
 }
 
 void vApplicationGetIdleTaskMemory(StaticTask_t **ppxIdleTaskTCBBuffer,

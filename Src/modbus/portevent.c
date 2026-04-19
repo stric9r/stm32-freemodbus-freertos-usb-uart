@@ -1,6 +1,8 @@
 #include "mb.h"
 #include "mbport.h"
 
+#include "watchdog.h"
+
 #include "FreeRTOS.h"
 #include "queue.h"
 
@@ -68,15 +70,14 @@ BOOL xMBPortEventPost(eMBEventType eEvent)
  *         timeout expires.
  *
  * Called by eMBPoll() on every iteration. Blocks for up to
- * PORT_EVENT_TIMEOUT_MS so the Modbus task yields the CPU when there is
- * nothing to process, but wakes up periodically to allow future watchdog
- * check-in logic to run (IWDG hardware timeout planned at 120 s).
+ * WD_CHECK_IN_TIME_MS so the Modbus task yields the CPU when there is
+ * nothing to process, but wakes up periodically to pet the watchdog.
  *
  * @return TRUE if an event was received, FALSE if the receive timed out.
  */
 BOOL xMBPortEventGet(eMBEventType *eEvent)
 {
     return (pdTRUE == xQueueReceive(eventQueue, eEvent,
-                                    pdMS_TO_TICKS(PORT_EVENT_TIMEOUT_MS)))
+                                    pdMS_TO_TICKS(WD_CHECK_IN_TIME_MS)))
            ? TRUE : FALSE;
 }
