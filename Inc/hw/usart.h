@@ -24,10 +24,11 @@
 extern "C" {
 #endif
 
-/* Includes ------------------------------------------------------------------*/
+
 #include "stm32l5xx_hal.h"
 #include "main.h"
 
+#include <stdbool.h>
 
 // @todo [2026-4-12] Decouple how the handle is passed around.  It's ugly.
 extern UART_HandleTypeDef huart2;

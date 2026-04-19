@@ -186,6 +186,9 @@ void HAL_LPTIM_MspInit(LPTIM_HandleTypeDef* lptimHandle)
     assert(HAL_OK == HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit));
 
     __HAL_RCC_LPTIM1_CLK_ENABLE();
+
+    HAL_NVIC_SetPriority(LPTIM1_IRQn, 5, 0);
+    HAL_NVIC_EnableIRQ(LPTIM1_IRQn);
   }
   else
   {
