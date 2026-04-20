@@ -106,15 +106,19 @@ void lptim_set_period(uint8_t const timerNum, uint16_t const timerUs)
 }
 
 /**
- * @brief  Bring up the given LPTIM timer and start a one-shot countdown.
+ * @brief  Arm or re-arm the given LPTIM timer for a one-shot countdown.
  *
- * Calls HAL_LPTIM_Init(), which triggers HAL_LPTIM_MspInit() to configure
- * the peripheral clock source and gate it on. The peripheral is then started
- * in one-shot mode with interrupt enabled: it counts from 0 up to the stored
- * ARR value and fires the LPTIM IRQ exactly once, then stops.
+ * Counts up from 0 to the ARR value stored by lptim_set_period() and fires
+ * the LPTIM IRQ exactly once when it reaches that value.
  *
- * Low-power note: the peripheral clock is gated off until this call, so the
- * timer draws no dynamic power between uses.
+ * If the timer is already running (e.g. called again before the previous
+ * countdown expired), the current count is discarded and a fresh countdown
+ * begins from 0 — no Init/DeInit cycle is needed because the peripheral
+ * clock is already gated on.
+ *
+ * If the timer is not running (first call after lptim_disable()), a full
+ * HAL_LPTIM_Init() is performed to gate the peripheral clock on before
+ * starting the countdown.
  *
  * Asserts if the module has not been initialized or the timer is not supported.
  *
@@ -126,7 +130,16 @@ void lptim_enable(uint8_t const timerNum)
 
   if (1u == timerNum)
   {
-    assert(HAL_OK == HAL_LPTIM_Init(&hLptim1));
+    if (HAL_LPTIM_STATE_BUSY == hLptim1.State)
+    {
+      // Timer already running — stop it so we can restart from 0
+      HAL_LPTIM_OnePulse_Stop_IT(&hLptim1);
+    }
+    else
+    {
+      // Coming from a cold/disabled state — bring up peripheral clock and NVIC
+      assert(HAL_OK == HAL_LPTIM_Init(&hLptim1));
+    }
     HAL_LPTIM_OnePulse_Start_IT(&hLptim1, periodTicksLptim1, 0u);
   }
   else
