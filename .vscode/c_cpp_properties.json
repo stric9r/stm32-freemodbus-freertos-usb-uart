@@ -5,9 +5,8 @@
             "includePath": [
                 "${workspaceFolder}/Inc",
                 "${workspaceFolder}/Inc/hw",
-                "${workspaceFolder}/Inc/rtos",
+                "${workspaceFolder}/Inc/app",
                 "${workspaceFolder}/Inc/modbus",
-                "${workspaceFolder}/Src/port",
                 "${workspaceFolder}/Drivers/STM32L5xx_HAL_Driver/Inc",
                 "${workspaceFolder}/Drivers/STM32L5xx_HAL_Driver/Inc/Legacy",
                 "${workspaceFolder}/Drivers/CMSIS/Device/ST/STM32L5xx/Include",
@@ -24,7 +23,7 @@
                 "STM32L552xx",
                 "DEBUG"
             ],
-            "compilerPath": "/usr/bin/arm-none-eabi-gcc",
+            "compilerPath": "/opt/st/stm32cubeide_2.1.1/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.14.3.rel1.linux64_1.0.100.202602081740/tools/bin/arm-none-eabi-gcc",
             "cStandard": "c11",
             "cppStandard": "c++14",
             "intelliSenseMode": "gcc-arm",
