@@ -48,18 +48,18 @@ void mb_mem_init(void)
     // @todo [2026-04-25] Read initial holding register values from flash on startup.
     // @todo [2026-04-25] Persist holding register writes to flash on change.
 
-    for (size_t i = 0u; i < REG_HOLDING_NREGS; i++)
+    for (size_t idx = 0u; idx < REG_HOLDING_NREGS; idx++)
     {
-        regHoldingBuf[i] = (USHORT)i;
+        regHoldingBuf[idx] = (USHORT)idx;
     }
 
-    for (size_t i = 0u; i < REG_INPUT_NREGS; i++)
+    for (size_t idx = 0u; idx< REG_INPUT_NREGS; idx++)
     {
-        regInputBuf[i] = (USHORT)i;
+        regInputBuf[idx] = (USHORT)idx;
     }
 
     mb_mem_mutex = xSemaphoreCreateMutexStatic(&mb_mem_mutex_buf);
-    assert(mb_mem_mutex != NULL);
+    assert(NULL != mb_mem_mutex);
 }
 
 /**
@@ -79,7 +79,7 @@ void mb_mem_init(void)
  */
 bool mb_mem_get_mutex(void)
 {
-    return xSemaphoreTake(mb_mem_mutex, 0) == pdTRUE;
+    return (pdTRUE == xSemaphoreTake(mb_mem_mutex, 0));
 }
 
 /**
