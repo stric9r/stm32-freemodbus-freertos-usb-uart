@@ -23,7 +23,6 @@
 #include "icache.h"
 #include "lptim.h"
 #include "usart.h"
-#include "usb.h"
 #include "watchdog.h"
 
 #include "FreeRTOS.h"
@@ -58,8 +57,6 @@ int main(void)
   
   // Modbus lib will init lptimer and usart
  
-  // todo [2026-04-18] USB not ready yet
-  usb_init();
 
   system_app_init();
 
