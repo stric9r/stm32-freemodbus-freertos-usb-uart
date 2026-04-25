@@ -28,7 +28,7 @@
 #include "stm32l5xx_hal.h"   /* RCC LSI enable, CMSIS device header */
 
 
-#include <assert.h>
+#include "assert_proj.h"
 #include <stdbool.h>
 
 

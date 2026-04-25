@@ -29,8 +29,6 @@ extern "C" {
 
 // @todo [2026-4-12] Rename main.h to common.h or something similar
 
-void Error_Handler(void);
-
 
 #define GPIO_BUTTON_Pin GPIO_PIN_13
 #define GPIO_BUTTON_GPIO_Port GPIOC

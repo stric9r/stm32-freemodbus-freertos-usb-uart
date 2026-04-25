@@ -11,7 +11,7 @@
 #include "stm32l5xx_hal.h"
 #include "usart_common.h"
 
-#include <assert.h>
+#include "assert_proj.h"
 #include <stddef.h>
 #include <stdint.h>
 #include <stdbool.h>

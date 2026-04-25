@@ -2,7 +2,7 @@
 #define _PORT_H
 
 #include "usart_common.h"
-#include <assert.h>
+#include "assert_proj.h"
 #include <stdint.h>
 #include <stdbool.h>
 

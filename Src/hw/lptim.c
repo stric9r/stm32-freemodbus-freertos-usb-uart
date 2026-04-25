@@ -19,7 +19,7 @@
 
 #include "lptim.h"
 
-#include <assert.h>
+#include "assert_proj.h"
 #include <stdbool.h>
 
 

@@ -18,7 +18,7 @@
 
 #include "gpio.h"
 
-#include <assert.h>
+#include "assert_proj.h"
 
 #include <stdbool.h>
 #include <stddef.h>
