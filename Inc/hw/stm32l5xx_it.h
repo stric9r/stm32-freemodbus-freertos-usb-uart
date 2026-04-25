@@ -1,4 +1,3 @@
-/* USER CODE BEGIN Header */
 /**
   ******************************************************************************
   * @file    stm32l5xx_it.h
@@ -15,9 +14,6 @@
   *
   ******************************************************************************
   */
-/* USER CODE END Header */
-
-/* Define to prevent recursive inclusion -------------------------------------*/
 #ifndef __STM32L5xx_IT_H
 #define __STM32L5xx_IT_H
 
@@ -25,33 +21,10 @@
 extern "C" {
 #endif
 
-/* Private includes ----------------------------------------------------------*/
-/* USER CODE BEGIN Includes */
-
-/* USER CODE END Includes */
-
-/* Exported types ------------------------------------------------------------*/
-/* USER CODE BEGIN ET */
-
-/* USER CODE END ET */
-
-/* Exported constants --------------------------------------------------------*/
-/* USER CODE BEGIN EC */
-
-/* USER CODE END EC */
-
-/* Exported macro ------------------------------------------------------------*/
-/* USER CODE BEGIN EM */
-
-/* USER CODE END EM */
-
-/* Exported functions prototypes ---------------------------------------------*/
 void DMA1_Channel3_IRQHandler(void);
 void TIM6_IRQHandler(void);
 void USART2_IRQHandler(void);
-/* USER CODE BEGIN EFP */
-
-/* USER CODE END EFP */
+void USB_FS_IRQHandler(void);
 
 #ifdef __cplusplus
 }
