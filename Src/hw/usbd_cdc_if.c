@@ -18,6 +18,16 @@
 
 #include "usbd_cdc_if.h"
 
+/* portserial_usb.h provides two things used in this file:
+ *   1. extern StreamBufferHandle_t usbRxStream — the FreeRTOS stream buffer
+ *      that CDC_Receive_FS writes received bytes into via xStreamBufferSendFromISR.
+ *   2. Transitive includes: stream_buffer.h (for xStreamBufferSendFromISR and
+ *      StreamBufferHandle_t) and stdbool.h.
+ * FreeRTOS.h is included explicitly because BaseType_t and portYIELD_FROM_ISR
+ * are direct dependencies of this file.                                       */
+#include "portserial_usb.h"
+#include "FreeRTOS.h"
+
 /* Create buffer for reception and transmission          */
 /* It's up to user to redefine and/or remove thoe define */
 /** Received data over USB are stored in this buffer     */
@@ -63,6 +73,11 @@ static int8_t CDC_Init_FS(void)
   */
 static int8_t CDC_DeInit_FS(void)
 {
+  /* No teardown needed.  usbRxStream is statically allocated and persists
+   * across USB disconnect/reconnect cycles — any bytes already in the buffer
+   * will simply never be drained (modbus_usb_run blocks on portMAX_DELAY and
+   * will wait for the next connection).  CDC_Init_FS re-arms the RX endpoint
+   * on reconnect, so the stream buffer remains valid without reinitialization. */
   return (USBD_OK);
 }
 
@@ -154,8 +169,11 @@ static int8_t CDC_Control_FS(uint8_t cmd, uint8_t* pbuf, uint16_t length)
   */
 static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
 {
-  USBD_CDC_SetRxBuffer(&hUsbDeviceFS, &Buf[0]);
+  BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+  xStreamBufferSendFromISR(usbRxStream, Buf, *Len, &xHigherPriorityTaskWoken);
+  USBD_CDC_SetRxBuffer(&hUsbDeviceFS, UserRxBufferFS);
   USBD_CDC_ReceivePacket(&hUsbDeviceFS);
+  portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
   return (USBD_OK);
 }
 
@@ -172,13 +190,19 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
   */
 uint8_t CDC_Transmit_FS(uint8_t* Buf, uint16_t Len)
 {
-  uint8_t result = USBD_OK;
-  USBD_CDC_HandleTypeDef *hcdc = (USBD_CDC_HandleTypeDef*)hUsbDeviceFS.pClassData;
-  if (hcdc->TxState != 0){
-    return USBD_BUSY;
+  USBD_CDC_HandleTypeDef * hcdc = (USBD_CDC_HandleTypeDef*)hUsbDeviceFS.pClassData;
+  uint8_t result;
+
+  if (hcdc->TxState != 0)
+  {
+    result = USBD_BUSY;
   }
-  USBD_CDC_SetTxBuffer(&hUsbDeviceFS, Buf, Len);
-  result = USBD_CDC_TransmitPacket(&hUsbDeviceFS);
+  else
+  {
+    USBD_CDC_SetTxBuffer(&hUsbDeviceFS, Buf, Len);
+    result = USBD_CDC_TransmitPacket(&hUsbDeviceFS);
+  }
+
   return result;
 }
 
@@ -196,9 +220,13 @@ uint8_t CDC_Transmit_FS(uint8_t* Buf, uint16_t Len)
   */
 static int8_t CDC_TransmitCplt_FS(uint8_t *Buf, uint32_t *Len, uint8_t epnum)
 {
-  uint8_t result = USBD_OK;
+  /* No action needed.  Modbus is strictly synchronous (one request, one
+   * response) so the master will not send the next request until after it
+   * has received the response.  By the time CDC_Receive_FS fires for the
+   * next frame, the previous CDC_Transmit_FS transfer is guaranteed complete.
+   * There is no need to track transmit completion at the application level.  */
   UNUSED(Buf);
   UNUSED(Len);
   UNUSED(epnum);
-  return result;
+  return USBD_OK;
 }
