@@ -5,9 +5,10 @@
 extern "C" {
 #endif
 
-void modbus_task(void * pPrgument);
+void modbus_task(void * pvParameters);
 
 #ifdef __cplusplus
 }
 #endif
+
 #endif /* MODBUS_TASK_H */
