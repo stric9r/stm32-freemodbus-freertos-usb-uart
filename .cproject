@@ -36,6 +36,7 @@
 									<listOptionValue builtIn="false" value="STM32_CMAKE"/>
 									<listOptionValue builtIn="false" value="MB_TIMER_DEBUG_RED=1"/>
 									<listOptionValue builtIn="false" value="WD_DEBUG_BLUE=1"/>
+									<listOptionValue builtIn="false" value="USB_MODBUS_ACTIVE_DEBUG_GREEN=1"/>
 								</option>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.assembler.option.includepaths.1643660540" name="Include paths (-I)" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.assembler.option.includepaths" valueType="includePath">
 									<listOptionValue builtIn="false" value="../Inc"/>
@@ -69,6 +70,7 @@
 									<listOptionValue builtIn="false" value="STM32_CMAKE"/>
 									<listOptionValue builtIn="false" value="MB_TIMER_DEBUG_RED=1"/>
 									<listOptionValue builtIn="false" value="WD_DEBUG_BLUE=1"/>
+									<listOptionValue builtIn="false" value="USB_MODBUS_ACTIVE_DEBUG_GREEN=1"/>
 								</option>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.option.includepaths.1354342783" name="Include paths (-I)" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.option.includepaths" useByScannerDiscovery="false" valueType="includePath">
 									<listOptionValue builtIn="false" value="../Inc"/>
@@ -177,6 +179,7 @@
 									<listOptionValue builtIn="false" value="STM32_CMAKE"/>
 									<listOptionValue builtIn="false" value="MB_TIMER_DEBUG_RED=1"/>
 									<listOptionValue builtIn="false" value="WD_DEBUG_BLUE=1"/>
+									<listOptionValue builtIn="false" value="USB_MODBUS_ACTIVE_DEBUG_GREEN=1"/>
 								</option>
 								<inputType id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.assembler.input.543797659" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.assembler.input"/>
 							</tool>
@@ -189,6 +192,7 @@
 									<listOptionValue builtIn="false" value="STM32_CMAKE"/>
 									<listOptionValue builtIn="false" value="MB_TIMER_DEBUG_RED=1"/>
 									<listOptionValue builtIn="false" value="WD_DEBUG_BLUE=1"/>
+									<listOptionValue builtIn="false" value="USB_MODBUS_ACTIVE_DEBUG_GREEN=1"/>
 								</option>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.option.includepaths.1069169623" name="Include paths (-I)" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.option.includepaths" useByScannerDiscovery="false" valueType="includePath">
 									<listOptionValue builtIn="false" value="../Inc"/>

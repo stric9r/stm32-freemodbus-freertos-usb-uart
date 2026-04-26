@@ -20,50 +20,82 @@
 #include "task.h"
 
 #include "main.h"
+#include "portserial.h"
+#include "modbus_port_ownership.h"
+
+#if COMMS_MODBUS_PORT != COMMS_MODBUS_USB
 #include "modbus_task.h"
+#endif
 
-/* Default task */
-static TaskHandle_t defaultTaskHandle;
-static StaticTask_t defaultTaskTcb;
-static StackType_t  defaultTaskStack[DEFAULT_TASK_STACK_SIZE];
-
-/* Modbus task */
-static TaskHandle_t modbusTaskHandle;
-static StaticTask_t modbusTaskTcb;
-static StackType_t  modbusTaskStack[MODBUS_TASK_STACK_SIZE];
+#if COMMS_MODBUS_PORT != COMMS_MODBUS_UART
+#include "modbus_usb.h"
+#include "usb_device.h"
+#endif
 
 /* Idle task — required by configSUPPORT_STATIC_ALLOCATION */
 static StaticTask_t idleTaskTcb;
 static StackType_t  idleTaskStack[configMINIMAL_STACK_SIZE];
 
-static void defaultTask(void *argument)
+#if COMMS_MODBUS_PORT != COMMS_MODBUS_USB
+/* Modbus UART task */
+static TaskHandle_t modbusUartTaskHandle;
+static StaticTask_t modbusUartTaskTcb;
+static StackType_t  modbusUartTaskStack[MODBUS_TASK_STACK_SIZE];
+#endif
+
+#if COMMS_MODBUS_PORT != COMMS_MODBUS_UART
+/* USB task */
+static TaskHandle_t usbTaskHandle;
+static StaticTask_t usbTaskTcb;
+static StackType_t  usbTaskStack[DEFAULT_TASK_STACK_SIZE];
+
+/**
+ * @brief USB task — initialises the USB CDC port then runs the Modbus USB handler.
+ *
+ * modbus_usb_init() must be called before usb_device_init() so the RX stream
+ * buffer exists before the first USB ISR fires.
+ *
+ * USBD_malloc is mapped to USBD_static_malloc (Inc/hw/usbd_conf.h) — no
+ * FreeRTOS heap dependency; safe to call from task context.
+ */
+static void usb_task(void * argument)
 {
     (void)argument;
+    modbus_usb_init();
+    usb_device_init();
     for (;;)
     {
-        vTaskDelay(pdMS_TO_TICKS(5000));
+        (void)modbus_usb_run();   /* sleeps until USB data arrives */
     }
 }
+#endif
 
 void system_app_init(void)
 {
-    defaultTaskHandle = xTaskCreateStatic(
-        defaultTask,
-        "defaultTask",
-        DEFAULT_TASK_STACK_SIZE,
-        NULL,
-        DEFAULT_TASK_PRIORITY,
-        defaultTaskStack,
-        &defaultTaskTcb);
+    /* Always called — no-op in non-DYNAMIC builds (guard is inside the function) */
+    modbus_port_ownership_init();
 
-    modbusTaskHandle = xTaskCreateStatic(
+#if COMMS_MODBUS_PORT != COMMS_MODBUS_USB
+    modbusUartTaskHandle = xTaskCreateStatic(
         modbus_task,
-        "modbusTask",
+        "modbusUartTask",
         MODBUS_TASK_STACK_SIZE,
         NULL,
         MODBUS_TASK_PRIORITY,
-        modbusTaskStack,
-        &modbusTaskTcb);
+        modbusUartTaskStack,
+        &modbusUartTaskTcb);
+#endif
+
+#if COMMS_MODBUS_PORT != COMMS_MODBUS_UART
+    usbTaskHandle = xTaskCreateStatic(
+        usb_task,
+        "usbTask",
+        DEFAULT_TASK_STACK_SIZE,
+        NULL,
+        DEFAULT_TASK_PRIORITY,
+        usbTaskStack,
+        &usbTaskTcb);
+#endif
 }
 
 void vApplicationGetIdleTaskMemory(StaticTask_t **ppxIdleTaskTCBBuffer,
@@ -74,4 +106,3 @@ void vApplicationGetIdleTaskMemory(StaticTask_t **ppxIdleTaskTCBBuffer,
     *ppxIdleTaskStackBuffer = idleTaskStack;
     *pulIdleTaskStackSize   = configMINIMAL_STACK_SIZE;
 }
-
