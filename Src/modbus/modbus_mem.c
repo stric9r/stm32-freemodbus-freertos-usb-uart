@@ -29,8 +29,8 @@
 #include <string.h>
 #include <assert.h>
 
-static USHORT regHoldingBuf[REG_HOLDING_NREGS];
-static USHORT regInputBuf[REG_INPUT_NREGS];
+static uint16_t regHoldingBuf[REG_HOLDING_NREGS];
+static uint16_t regInputBuf[REG_INPUT_NREGS];
 
 static StaticSemaphore_t mb_mem_mutex_buf;
 static SemaphoreHandle_t mb_mem_mutex;
@@ -49,12 +49,12 @@ void mb_mem_init(void)
 
     for (size_t idx = 0u; idx < REG_HOLDING_NREGS; idx++)
     {
-        regHoldingBuf[idx] = (USHORT)idx;
+        regHoldingBuf[idx] = (uint16_t)idx;
     }
 
     for (size_t idx = 0u; idx< REG_INPUT_NREGS; idx++)
     {
-        regInputBuf[idx] = (USHORT)idx;
+        regInputBuf[idx] = (uint16_t)idx;
     }
 
     mb_mem_mutex = xSemaphoreCreateMutexStatic(&mb_mem_mutex_buf);

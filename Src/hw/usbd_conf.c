@@ -58,7 +58,7 @@ void HAL_PCD_MspInit(PCD_HandleTypeDef* pcdHandle)
     PeriphClkInit.PLLSAI1.PLLSAI1R = RCC_PLLR_DIV2;
     PeriphClkInit.PLLSAI1.PLLSAI1ClockOut = RCC_PLLSAI1_48M2CLK;
 
-    assert(HAL_OK == HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit))
+    assert(HAL_OK == HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit));
 
     __HAL_RCC_GPIOA_CLK_ENABLE();
     /**USB GPIO Configuration

@@ -41,7 +41,7 @@ static uint16_t usbTxLen;
 /**
  * @brief Initialise the USB serial port layer.
  *
- * Creates the RX stream buffer.  Must be called before @c usb_device_init()
+ * Creates the RX stream buffer.  Must be called before @c MX_USB_Device_Init()
  * so the stream buffer exists when the first USB ISR fires.
  */
 void portserial_usb_init(void)

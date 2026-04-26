@@ -52,7 +52,7 @@ static StackType_t  usbTaskStack[DEFAULT_TASK_STACK_SIZE];
 /**
  * @brief USB task — initialises the USB CDC port then runs the Modbus USB handler.
  *
- * modbus_usb_init() must be called before usb_device_init() so the RX stream
+ * modbus_usb_init() must be called before MX_USB_Device_Init() so the RX stream
  * buffer exists before the first USB ISR fires.
  *
  * USBD_malloc is mapped to USBD_static_malloc (Inc/hw/usbd_conf.h) — no
@@ -62,7 +62,7 @@ static void usb_task(void * argument)
 {
     (void)argument;
     modbus_usb_init();
-    usb_device_init();
+    MX_USB_Device_Init();
     for (;;)
     {
         (void)modbus_usb_run();   /* sleeps until USB data arrives */

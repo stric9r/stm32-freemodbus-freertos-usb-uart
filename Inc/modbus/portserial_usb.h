@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include "FreeRTOS.h"
 #include "stream_buffer.h"
 
 #ifdef __cplusplus

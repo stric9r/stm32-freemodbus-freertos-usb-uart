@@ -75,7 +75,7 @@ static uint8_t slaveAddr;
  * @brief Initialise the USB Modbus adapter.
  *
  * Creates the RX stream buffer (via portserial_usb_init) and records the
- * slave address.  Must be called before usb_device_init() so the stream buffer
+ * slave address.  Must be called before MX_USB_Device_Init() so the stream buffer
  * exists when the first CDC_Receive_FS ISR fires.
  */
 void modbus_usb_init(void)

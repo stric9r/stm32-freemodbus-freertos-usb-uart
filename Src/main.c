@@ -31,7 +31,6 @@
 #include <stdbool.h>
 
 static void SystemClock_Config(void);
-static volatile bool isDebuggerAttached(void);
 
 /**
   * @brief  The application entry point.
@@ -147,12 +146,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   }
 }
 
-
-static volatile bool isDebuggerAttached(void) 
-{
-  return (CoreDebug->DHCSR & CoreDebug_DHCSR_C_DEBUGEN_Msk) != 0;
-}
-
 /**
   * @brief  This function is executed in case of error occurrence.
   * @retval None
@@ -169,6 +162,18 @@ void Error_Handler(void)
 }
 
 #ifdef USE_FULL_ASSERT
+
+static volatile bool isDebuggerAttached(void);
+
+/** @brief Checks if debugger is attached
+ * 
+ * @retval TRUE if attached, flase otherwise
+*/
+static volatile bool isDebuggerAttached(void) 
+{
+  return (CoreDebug->DHCSR & CoreDebug_DHCSR_C_DEBUGEN_Msk) != 0;
+}
+
 /**
   * @brief  Reports the name of the source file and the source line number
   *         where the assert_param error has occurred.

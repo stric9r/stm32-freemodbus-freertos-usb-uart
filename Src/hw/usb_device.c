@@ -35,7 +35,7 @@ extern USBD_DescriptorsTypeDef CDC_Desc;
   * Init USB device Library, add supported class and start the library
   * @retval None
   */
-void usb_device_init(void)
+void MX_USB_Device_Init(void)
 {
   /* Init Device Library, add supported class and start the library. */
   assert(USBD_OK == USBD_Init(&hUsbDeviceFS, &CDC_Desc, DEVICE_FS));

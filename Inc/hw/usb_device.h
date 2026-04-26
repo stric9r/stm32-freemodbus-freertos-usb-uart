@@ -28,7 +28,7 @@
 
 
 /** USB Device initialization function. */
-void usb_device_init(void);
+void MX_USB_Device_Init(void);
 
 #ifdef __cplusplus
 }
