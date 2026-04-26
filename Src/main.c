@@ -30,8 +30,6 @@
 
 #include <stdbool.h>
 
-static void SystemClock_Config(void);
-
 /**
   * @brief  The application entry point.
   * @retval int
@@ -77,7 +75,7 @@ int main(void)
   * @brief System Clock Configuration
   * @retval None
   */
-static void SystemClock_Config(void)
+void SystemClock_Config(void)
 {
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
   RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};

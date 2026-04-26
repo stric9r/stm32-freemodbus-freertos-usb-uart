@@ -47,7 +47,7 @@ static StackType_t  modbusUartTaskStack[MODBUS_TASK_STACK_SIZE];
 /* USB task */
 static TaskHandle_t usbTaskHandle;
 static StaticTask_t usbTaskTcb;
-static StackType_t  usbTaskStack[DEFAULT_TASK_STACK_SIZE];
+static StackType_t  usbTaskStack[USB_TASK_STACK_SIZE];
 
 /**
  * @brief USB task — initialises the USB CDC port then runs the Modbus USB handler.
@@ -78,7 +78,7 @@ void system_app_init(void)
 #if COMMS_MODBUS_PORT != COMMS_MODBUS_USB
     modbusUartTaskHandle = xTaskCreateStatic(
         modbus_task,
-        "modbusUartTask",
+        "modbus_task",
         MODBUS_TASK_STACK_SIZE,
         NULL,
         MODBUS_TASK_PRIORITY,
@@ -89,7 +89,7 @@ void system_app_init(void)
 #if COMMS_MODBUS_PORT != COMMS_MODBUS_UART
     usbTaskHandle = xTaskCreateStatic(
         usb_task,
-        "usbTask",
+        "usb_task",
         DEFAULT_TASK_STACK_SIZE,
         NULL,
         DEFAULT_TASK_PRIORITY,

@@ -174,10 +174,7 @@ eMBErrorCode modbus_usb_run(void)
      * xStreamBufferReceive returns the first byte, all remaining bytes are
      * already in the stream buffer.  Claiming early would require an explicit
      * release on validation failure, adding complexity with no real benefit. */
-    if (bContinue && !modbus_port_ownership_try_claim())
-    {
-        bContinue = false;  /* UART owns the bus — discard silently */
-    }
+     bContinue &= modbus_port_ownership_try_claim();
 
     /* --- Inject frame into FreeModbus via port layer mux ---
      *
@@ -200,7 +197,7 @@ eMBErrorCode modbus_usb_run(void)
 
         vMBPortUsbInjectFrame(frameBuf, frameLen);
 
-        /* Reset the 5-second inactivity timer so ownership is not released mid-session */
+        /* Reset the 500ms inactivity timer so ownership is not released mid-session */
         modbus_port_ownership_refresh();
     }
 

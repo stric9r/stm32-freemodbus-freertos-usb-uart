@@ -76,6 +76,9 @@
 #include "port_internal.h"
 #include "portserial_usb.h"
 
+#include "FreeRTOS.h"
+#include "task.h"
+
 #if USB_MODBUS_ACTIVE_DEBUG_GREEN
 #include "gpio.h"
 #include "main.h"
@@ -129,8 +132,16 @@ bool xMBPortIsUsbActive(void)
  */
 void vMBPortSetUsbActive(bool active)
 {
+    if (active)
+    {
+        /* Disarm the t3.5 timer before injection begins.  A pending LPTIM1
+         * interrupt from a prior UART receive cycle could fire during injection
+         * and call xMBRTUTimerT35Expired() prematurely, resetting eRcvState to
+         * STATE_RX_IDLE before our explicit pxMBPortCBTimerExpired() call.    */
+        vMBPortTimersDisable();
+    }
     bUsbActive = active;
-    
+
 #if USB_MODBUS_ACTIVE_DEBUG_GREEN
     HAL_GPIO_WritePin(GPIO_GREEN_LED_GPIO_Port, GPIO_GREEN_LED_Pin,
                       active ? GPIO_PIN_SET : GPIO_PIN_RESET);
@@ -163,8 +174,14 @@ void vMBPortSetUsbActive(bool active)
  */
 void vMBPortUsbInjectFrame(uint8_t const * pFrame, uint16_t len)
 {
+    vMBPortTimersDisable();
+
     for (uint16_t i = 0u; i < len; i++)
     {
+        /* Belt-and-braces: disable LPTIM1 in case vMBPortTimersEnable()
+         * managed to arm it between the FSM call and this line.          */
+        vMBPortTimersDisable();
+
         /* Stage the byte so xMBPortSerialGetByte() can return it when
          * xMBRTUReceiveFSM() calls it on the very next line.            */
         usbPendingByte = (CHAR)pFrame[i];
@@ -175,18 +192,16 @@ void vMBPortUsbInjectFrame(uint8_t const * pFrame, uint16_t len)
          * which is suppressed by the xMBPortIsUsbActive() guard.         */
         (void)pxMBFrameCBByteReceived();
 
-        /* Belt-and-braces: disable LPTIM1 in case vMBPortTimersEnable()
-         * managed to arm it between the FSM call and this line.          */
-        vMBPortTimersDisable();
     }
 
-    /* Simulate t3.5 inter-frame silence.  pxMBPortCBTimerExpired()
-     * (= xMBRTUTimerT35Expired) sees the state machine in STATE_RX_RCV,
-     * posts EV_FRAME_RECEIVED to the FreeModbus event queue, and transitions
-     * to STATE_RX_IDLE — identical to what LPTIM1 does after a real UART frame.
-     * portevent.c uses xPortIsInsideInterrupt() to select xQueueSend (task
-     * context) vs xQueueSendFromISR, so calling this from task context is safe. */
+    /* Simulate t3.5 inter-frame silence.  taskENTER_CRITICAL defers the
+     * context switch until after xMBRTUTimerT35Expired sets eRcvState =
+     * STATE_RX_IDLE (mbrtu.c line 424).  Without it, xMBPortEventPost
+     * (EV_FRAME_RECEIVED) immediately preempts to modbus_task which sees
+     * eRcvState == STATE_RX_RCV and eMBRTUSend aborts the response. */
+    taskENTER_CRITICAL();
     (void)pxMBPortCBTimerExpired();
+    taskEXIT_CRITICAL();
 }
 
 /* -------------------------------------------------------------------------
@@ -278,27 +293,31 @@ void vMBPortSerialEnable( BOOL rxEnable, BOOL txEnable )
         if (!rxEnable && txEnable)
         {
             /* --- USB TX start ---
-             * Drive the RTU transmit state machine synchronously.
-             * xMBRTUTransmitFSM() (pxMBFrameCBTransmitterEmpty) returns TRUE
-             * while there are bytes remaining and FALSE when done (STATE_TX_XFWR).
-             * Each call invokes xMBPortSerialPutByte() which accumulates bytes
-             * in the USB TX buffer via portserial_usb_put_byte().              */
-            while (pxMBFrameCBTransmitterEmpty()) { }
+             * Drive the RTU transmit FSM byte by byte.  xMBRTUTransmitFSM()
+             * returns FALSE while bytes remain (one byte per call) and TRUE
+             * when all bytes are sent (EV_FRAME_SENT posted).  On completion
+             * it calls vMBPortSerialEnable(TRUE,FALSE) internally, which hits
+             * the USB restore branch below and clears bUsbActive.             */
+            while (!pxMBFrameCBTransmitterEmpty()) { }
 
-            /* Send all accumulated bytes as one CDC bulk transfer */
+            /* Send all accumulated bytes as one CDC bulk transfer.
+             * bUsbActive is already false at this point (cleared by the
+             * recursive vMBPortSerialEnable(TRUE,FALSE) above), but
+             * portserial_usb_flush_tx() does not depend on it.               */
             portserial_usb_flush_tx();
 
-            /* Simulate post-TX t3.5 silence.  xMBRTUTimerT35Expired() sees
-             * STATE_TX_XFWR, resets the RTU state machine to IDLE, and calls
-             * vMBPortSerialEnable(TRUE, FALSE) — which hits the branch below.  */
-            (void)pxMBPortCBTimerExpired();
+            /* No pxMBPortCBTimerExpired() call here.  This FreeModbus version
+             * has no STATE_TX_XFWR — xMBRTUTransmitFSM() calls
+             * vMBPortSerialEnable(TRUE,FALSE) directly when done, which
+             * already handles cleanup.  Calling pxMBPortCBTimerExpired() would
+             * hit eRcvState == STATE_RX_IDLE and assert.                      */
         }
         else if (rxEnable && !txEnable)
         {
-            /* --- USB restore (called from within pxMBPortCBTimerExpired above) ---
-             * TX cycle is complete.  Clear the USB flag so the next FreeModbus
-             * operation goes back to UART hardware.  Re-enable the UART RX
-             * interrupt that was masked before frame injection began.            */
+            /* --- USB restore ---
+             * Called by xMBRTUTransmitFSM() when the last TX byte is sent.
+             * Clear the USB flag so subsequent FreeModbus calls go back to
+             * UART, and re-enable the UART RX interrupt.                      */
             bUsbActive = false;
             MB_SERIAL_ENABLE_RX_IRQ();
         }

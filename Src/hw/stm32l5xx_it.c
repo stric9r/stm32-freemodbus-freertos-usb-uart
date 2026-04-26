@@ -1,4 +1,3 @@
-/* USER CODE BEGIN Header */
 /**
   ******************************************************************************
   * @file    stm32l5xx_it.c
@@ -15,51 +14,19 @@
   *
   ******************************************************************************
   */
-/* USER CODE END Header */
 
-/* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "stm32l5xx_it.h"
-/* Private includes ----------------------------------------------------------*/
-/* USER CODE BEGIN Includes */
-/* USER CODE END Includes */
 
-/* Private typedef -----------------------------------------------------------*/
-/* USER CODE BEGIN TD */
+extern PCD_HandleTypeDef hpcd_USB_FS;
 
-/* USER CODE END TD */
+// @todo [2026-04-26] Use DMA or remove it
+//extern DMA_HandleTypeDef hdma_usart2_tx;
 
-/* Private define ------------------------------------------------------------*/
-/* USER CODE BEGIN PD */
+// Not using here, modbus handles it directly outside of FreeRTOS and CubeMX
+//extern UART_HandleTypeDef huart2;
 
-/* USER CODE END PD */
-
-/* Private macro -------------------------------------------------------------*/
-/* USER CODE BEGIN PM */
-
-/* USER CODE END PM */
-
-/* Private variables ---------------------------------------------------------*/
-/* USER CODE BEGIN PV */
-
-/* USER CODE END PV */
-
-/* Private function prototypes -----------------------------------------------*/
-/* USER CODE BEGIN PFP */
-
-/* USER CODE END PFP */
-
-/* Private user code ---------------------------------------------------------*/
-/* USER CODE BEGIN 0 */
-
-/* USER CODE END 0 */
-
-/* External variables --------------------------------------------------------*/
 extern TIM_HandleTypeDef htim6;
-
-/* USER CODE BEGIN EV */
-
-/* USER CODE END EV */
 
 /******************************************************************************/
 /*           Cortex Processor Interruption and Exception Handlers          */
@@ -77,13 +44,8 @@ extern TIM_HandleTypeDef htim6;
   */
 void DMA1_Channel3_IRQHandler(void)
 {
-  /* USER CODE BEGIN DMA1_Channel3_IRQn 0 */
-
-  /* USER CODE END DMA1_Channel3_IRQn 0 */
+  // @todo [2026-04-26] Use DMA or remove it
   // HAL_DMA_IRQHandler(&hdma_usart2_tx);
-  /* USER CODE BEGIN DMA1_Channel3_IRQn 1 */
-
-  /* USER CODE END DMA1_Channel3_IRQn 1 */
 }
 
 /**
@@ -91,17 +53,22 @@ void DMA1_Channel3_IRQHandler(void)
   */
 void TIM6_IRQHandler(void)
 {
-  /* USER CODE BEGIN TIM6_IRQn 0 */
-
-  /* USER CODE END TIM6_IRQn 0 */
   HAL_TIM_IRQHandler(&htim6);
-  /* USER CODE BEGIN TIM6_IRQn 1 */
-
-  /* USER CODE END TIM6_IRQn 1 */
 }
 
-/* USART2_IRQHandler is owned by portserial.c (via MB_SERIAL_PERIPH_IRQ). */
+/**
+  * @brief This function handles USART2 global interrupt / USART2 wake-up interrupt through EXTI line 27.
+  */
+ /* Not using here, modbus handles it directly outside of FreeRTOS and CubeMX
+void USART2_IRQHandler(void)
+{
+  HAL_UART_IRQHandler(&huart2);
+}*/
 
-/* USER CODE BEGIN 1 */
-
-/* USER CODE END 1 */
+/**
+  * @brief This function handles USB FS global interrupt / USB FS wake-up interrupt through EXTI line 34.
+  */
+void USB_FS_IRQHandler(void)
+{
+  HAL_PCD_IRQHandler(&hpcd_USB_FS);
+}

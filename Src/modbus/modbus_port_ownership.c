@@ -23,7 +23,9 @@
  */
 
 #include "modbus_port_ownership.h"
+
 #include "portserial.h"
+#include "portserial_usb.h"
 
 #if COMMS_MODBUS_PORT == COMMS_MODBUS_DYNAMIC
 
@@ -31,7 +33,7 @@
 #include "semphr.h"
 #include "timers.h"
 
-#define PORT_OWNER_TIMEOUT_MS   5000u
+#define PORT_OWNER_TIMEOUT_MS   500u
 
 static StaticSemaphore_t portOwnerSemBuf;
 static SemaphoreHandle_t portOwnerSem;
@@ -50,6 +52,7 @@ static void port_owner_timeout_cb(TimerHandle_t xTimer)
 {
     (void)xTimer;
     (void)xSemaphoreGive(portOwnerSem);
+    vMBPortSetUsbActive(false);
 }
 
 #endif /* COMMS_MODBUS_DYNAMIC */

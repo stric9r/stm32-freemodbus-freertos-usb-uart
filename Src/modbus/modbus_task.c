@@ -129,7 +129,8 @@ eMBErrorCode eMBRegInputCB(UCHAR * pRegBuffer, USHORT address, USHORT nRegs)
  * @return MB_ENOERR  Operation completed successfully.
  * @return MB_ENOREG  Range out of bounds, mutex unavailable, or write failed.
  */
-eMBErrorCode eMBRegHoldingCB(UCHAR * pRegBuffer, USHORT address, USHORT nRegs,
+eMBErrorCode
+eMBRegHoldingCB(UCHAR * pRegBuffer, USHORT address, USHORT nRegs,
                               eMBRegisterMode eMode)
 {
     if ((address < (USHORT)REG_HOLDING_START) ||

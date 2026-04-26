@@ -33,7 +33,7 @@ void Error_Handler(void);
 static USBD_StatusTypeDef USBD_Get_USB_Status(HAL_StatusTypeDef hal_status);
 static void SystemClockConfig_Resume(void);
 
-extern void SystemClock_Config(void);
+#include "main.h"
 
 /*******************************************************************************
                        LL Driver Callbacks (PCD -> USB Device Library)

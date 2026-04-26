@@ -40,6 +40,11 @@ static bool bInitialized = false;
  */
 void watchdog_init(void)
 {
+#ifdef DEBUG
+    __HAL_DBGMCU_FREEZE_IWDG();
+    __HAL_DBGMCU_FREEZE_WWDG();
+#endif
+
   // We have an assumption that our clock is 32kHz
   assert(32000U == LSI_VALUE);
 
