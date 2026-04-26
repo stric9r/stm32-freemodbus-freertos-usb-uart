@@ -20,7 +20,7 @@
 
 #include "watchdog.h"
 
-#if WD_DEBUG_BLUE
+#if WD_DEBUG_BLUE 
 #include "gpio.h"
 #include "main.h"
 #endif

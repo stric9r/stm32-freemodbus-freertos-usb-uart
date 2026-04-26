@@ -1,6 +1,9 @@
 #ifndef PORT_ADDRESSES_H
 #define PORT_ADDRESSES_H
 
+/* Modbus slave address — arbitrarily selected; set for product X */
+#define DEFAULT_SLAVE_ADDR  0x0Au
+
 /* Holding registers — arbitrarily selected; set for product X */
 #define REG_HOLDING_START   1u
 #define REG_HOLDING_NREGS   100u

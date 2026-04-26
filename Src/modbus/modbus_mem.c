@@ -15,10 +15,9 @@
  *   retry on the next poll cycle.
  *
  * Batch operations (FreeModbus callbacks iterate over N registers):
- *   Call @c mb_mem_get_mutex() once, perform all accesses via the internal raw
- *   helper @c mb_mem_raw_holding() / @c mb_mem_raw_input(), then call
- *   @c mb_mem_release_mutex(). Do NOT call the public get/set functions while
- *   already holding the mutex — they will fail the inner acquire.
+ *   Call @c mb_mem_get_mutex() once, perform all accesses via the public
+ *   get/set functions (which do not re-acquire the mutex), then call
+ *   @c mb_mem_release_mutex().
  */
 
 #include "modbus_mem.h"
@@ -71,8 +70,7 @@ void mb_mem_init(void)
  * need explicit batch control.
  *
  * Callers MUST call @c mb_mem_release_mutex() after every successful return of
- * true, and after every successful @c mb_mem_get_holding() / @c mb_mem_get_input()
- * that returned a non-NULL pointer.
+ * true to release the mutex when the batch operation is complete.
  *
  * @return true   Mutex acquired — proceed with register access.
  * @return false  Mutex already held by another task — discard request.
@@ -97,22 +95,20 @@ void mb_mem_release_mutex(void)
 /**
  * @brief Read a single holding register.
  *
- * Acquires the mutex internally (non-blocking). The returned pointer is valid
- * only while the mutex is held — the caller MUST call @c mb_mem_release_mutex()
- * when done reading, before another task can overwrite the value.
+ * Caller must hold the mutex via @c mb_mem_get_mutex() before calling this
+ * function, and release it with @c mb_mem_release_mutex() when done.
  *
  * @param addr  Modbus register address (must be within REG_HOLDING_START ..
  *              REG_HOLDING_START + REG_HOLDING_NREGS - 1).
- * @return Pointer to the register value — mutex is now held by the caller.
+ * @return Pointer to the register value.
  * @return NULL if @p addr is out of range.
  */
 uint16_t const * mb_mem_get_holding(uint16_t const addr)
 {
     uint16_t * pData = NULL;
 
-    // We're in range and got the semaphore?
     bool bStatus  = (addr >= (uint16_t)REG_HOLDING_START);
-         bStatus &= (addr < (uint16_t)(REG_HOLDING_START + REG_HOLDING_NREGS));
+         bStatus &= (addr <  (uint16_t)(REG_HOLDING_START + REG_HOLDING_NREGS));
 
     if(bStatus)
     {
@@ -140,14 +136,10 @@ bool mb_mem_set_holding(uint16_t const addr,
                         size_t   const data_sz)
 {
     assert(NULL != p_data);
-    assert(0 < data_sz);
+    assert(0u < data_sz);
 
-    uint16_t * pData = NULL;
-
-    // We're in range and got the semaphore?
     bool bStatus  = (addr >= (uint16_t)REG_HOLDING_START);
-         bStatus &= (((size_t)(addr - (uint16_t)REG_HOLDING_START) + data_sz) < REG_HOLDING_NREGS);
-
+         bStatus &= (((size_t)(addr - (uint16_t)REG_HOLDING_START) + data_sz) <= REG_HOLDING_NREGS);
 
     if(bStatus)
     {
@@ -156,25 +148,25 @@ bool mb_mem_set_holding(uint16_t const addr,
     }
 
     return bStatus;
+}
 
 /**
  * @brief Read a single input register.
  *
- * Same mutex semantics as @c mb_mem_get_holding — caller MUST call
- * @c mb_mem_release_mutex() after reading the returned value.
+ * Caller must hold the mutex via @c mb_mem_get_mutex() before calling this
+ * function, and release it with @c mb_mem_release_mutex() when done.
  *
  * @param addr  Modbus register address (must be within REG_INPUT_START ..
  *              REG_INPUT_START + REG_INPUT_NREGS - 1).
- * @return Pointer to the register value — mutex is now held by the caller.
- * @return NULL if @p addr is out of range or if the mutex is unavailable.
+ * @return Pointer to the register value.
+ * @return NULL if @p addr is out of range.
  */
 uint16_t const * mb_mem_get_input(uint16_t const addr)
 {
     uint16_t const * pData = NULL;
 
-    // We're in range and got the semaphore?
     bool bStatus  = (addr >= (uint16_t)REG_INPUT_START);
-         bStatus &= (addr < (uint16_t)(REG_INPUT_START + REG_INPUT_NREGS));
+         bStatus &= (addr <  (uint16_t)(REG_INPUT_START + REG_INPUT_NREGS));
 
     if(bStatus)
     {

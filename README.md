@@ -1,55 +1,177 @@
-# STM32L552 FreeModbus - FreeRTOS with USB/UART
-
-Project still very much WIP.
+# STM32L552 FreeModbus — FreeRTOS with USB/UART
 
 ## General
-Project primarily used to demonstrate knowledge of
-- FreeRTOS
-- FreeModbus
-- USB
-- Potentially DMA - May have to make changes to FreeModbus to allow this.
-- USART as UART
-- Timers
-- General firmware development
 
-This is project on a NUCLEO-L552ZE-Q board. 
-It's what I have on hand, and used to learn STM32 development.
-It was chosen for no special reason except that its what I had. 
+Project demonstrating:
+- FreeRTOS — tasks, stream buffers, queues, semaphores, software timers
+- FreeModbus — RTU slave, ported to FreeRTOS with custom port layer
+- USB CDC — virtual COM port as a second Modbus port alongside UART
+- USART as UART — hardware serial at 115200 8N1
+- LPTIM — hardware one-shot timer for Modbus t3.5 inter-frame silence detection
+- IWDG — hardware watchdog with per-task check-in
 
-Project generated with STMCubeMX and edited in STM32CubeIDE and VSCode.
-The example project was the FreeRTOS Timers example.  
-This was done to get a project with a port of FreeRTOS already there.
-It has been heavily modified.
+Target board: **NUCLEO-L552ZE-Q** (STM32L552ZET6Q, Cortex-M33, TrustZone not used).
+Board chosen for availability — no special reason beyond that.
 
-Personally I'm a fan of VSCode but STMCubeIDE is useful for project setup and a 
-quick build environment.
+Project generated with STM32CubeMX, developed in VSCode and STM32CubeIDE.
+Base example was the FreeRTOS Timers template, heavily modified.
 
-VSCode primarily used to do code development.
+> Admission — Claude Code was used to assist with documentation and implementation.
+> Proper prompting is key!
 
-Admission - I used Claude Pro to help with documentation.  It does it better than me :( But it's a tool so I'll use it to be more efficient.  It does have quirks though.  Proper prompting is key!
+---
+
+## Theory of Operation
+
+### Project Build Configuration
+
+#### Transport Selection
+
+A compile-time define in `Inc/modbus/portserial.h` selects which physical port the Modbus slave listens on:
+
+```c
+#define COMMS_MODBUS_UART     0   // USART2 only
+#define COMMS_MODBUS_USB      1   // USB CDC only
+#define COMMS_MODBUS_DYNAMIC  2   // both; first frame claims the bus
+
+#define COMMS_MODBUS_PORT     COMMS_MODBUS_DYNAMIC
+```
+
+In **DYNAMIC** mode both ports are active simultaneously.  A binary semaphore in `modbus_port_ownership.c` ensures only one transport processes frames at a time.  The first complete frame to arrive claims the bus.  A 5-second inactivity one-shot FreeRTOS timer releases the bus automatically so the other transport can take over.
+
+#### Port Headers
+
+The Modbus port layer is split across several headers, each with a distinct configuration scope:
+
+| Header | Configures | Porting role |
+|--------|-----------|--------------|
+| [`Inc/modbus/portserial.h`](Inc/modbus/portserial.h) | Transport mode (`COMMS_MODBUS_PORT`); UART defaults — baud rate, parity, stop bits, RTU/ASCII mode | Standard porting file; `COMMS_MODBUS_PORT` is a USB-specific addition |
+| [`Inc/modbus/port_internal.h`](Inc/modbus/port_internal.h) | Hardware peripheral bindings: which LPTIM instance drives t3.5 timing (`MB_TIMER`), which USART instance is the Modbus serial port (`MB_SERIAL`), associated IRQ names and register macros | Standard porting — change only this file to migrate to a different USART or timer |
+| [`Inc/modbus/port_addresses.h`](Inc/modbus/port_addresses.h) | Modbus slave address (`DEFAULT_SLAVE_ADDR`); holding and input register start addresses and counts; coil and discrete register placeholders | Application configuration — not hardware-specific |
+| [`Inc/modbus/port.h`](Inc/modbus/port.h) | FreeModbus type aliases (`BOOL`, `UCHAR`, `USHORT`, etc.); critical section macros mapped to `__disable_irq` / `__enable_irq` | Standard FreeModbus porting layer — minimal changes from the reference port |
+| [`Inc/modbus/portserial_usb.h`](Inc/modbus/portserial_usb.h) | USB CDC byte layer API (`portserial_usb_init`, `portserial_usb_flush_tx`); transport-mux API (`vMBPortSetUsbActive`, `vMBPortUsbInjectFrame`); RX stream buffer handle (`usbRxStream`) | Added for USB — no equivalent in a UART-only port |
+
+### Tasks
+
+| Task | Priority | Function |
+|------|----------|----------|
+| `modbus_task` | 5 | Runs the FreeModbus polling loop (`eMBPoll()`). Handles all register callbacks for both UART and USB frames. |
+| `usb_task` | 4 | Waits for USB CDC frames, pre-validates them, and feeds them into the FreeModbus RTU state machine via the port layer mux. |
+| Idle | 0 | FreeRTOS idle task (static allocation). |
+
+### UART Modbus Path
+
+```
+USART2 RX interrupt
+  → MB_SERIAL_IRQ_FUNC()  (port_internal.h)
+  → pxMBFrameCBByteReceived()  (= xMBRTUReceiveFSM, mbrtu.c)
+      reads byte via xMBPortSerialGetByte()  →  USART2->RDR
+      restarts LPTIM1 t3.5 countdown via vMBPortTimersEnable()
+
+LPTIM1 interrupt fires after t3.5 silence
+  → pxMBPortCBTimerExpired()  (= xMBRTUTimerT35Expired)
+  → posts EV_FRAME_RECEIVED to FreeModbus event queue
+
+modbus_task / eMBPoll() wakes
+  → eMBRTUReceive() validates CRC, extracts address + PDU
+  → function-code handler (eMBRegHoldingCB / eMBRegInputCB in modbus_task.c)
+      accesses shared registers via modbus_mem (mutex-protected)
+  → eMBRTUSend() calls vMBPortSerialEnable(FALSE, TRUE)
+      → enables USART2 TXE interrupt
+      → byte-by-byte: USART2 TXE ISR → xMBRTUTransmitFSM → xMBPortSerialPutByte → USART2->TDR
+  → vMBPortSerialEnable(TRUE, FALSE) restores RX mode
+```
+
+### USB Modbus Path
+
+```
+CDC_Receive_FS (USB ISR)
+  → xStreamBufferSendFromISR(usbRxStream, ...)
+  → re-arms USB OUT endpoint, yields to higher-priority task if woken
+
+usb_task / modbus_usb_run() unblocks from xStreamBufferReceive
+  → drains stream buffer with 2 ms inter-byte timeout (t3.5 equivalent)
+  → pre-validates: length ≥ 8 bytes, address match, CRC == 0
+  → claims port ownership (DYNAMIC mode) — discards if UART owns the bus
+  → vMBPortSetUsbActive(true) — redirects FreeModbus byte I/O to USB
+  → MB_SERIAL_DISABLE_RX_IRQ() — masks UART RX during injection
+  → vMBPortUsbInjectFrame()
+      for each byte: stage in usbPendingByte, call pxMBFrameCBByteReceived()
+                     xMBRTUReceiveFSM reads usbPendingByte instead of USART2->RDR
+                     vMBPortTimersEnable() suppressed (xMBPortIsUsbActive() guard)
+      after last byte: pxMBPortCBTimerExpired() posts EV_FRAME_RECEIVED
+
+modbus_task / eMBPoll() wakes (same path as UART)
+  → function-code handler runs, accesses modbus_mem
+  → eMBRTUSend() calls vMBPortSerialEnable(FALSE, TRUE)
+      → USB TX path: drives xMBRTUTransmitFSM synchronously (no TXE interrupt)
+                     xMBPortSerialPutByte accumulates bytes in USB TX buffer
+                     portserial_usb_flush_tx() fires CDC_Transmit_FS in one shot
+                     pxMBPortCBTimerExpired() completes FreeModbus TX cycle
+  → vMBPortSerialEnable(TRUE, FALSE) clears bUsbActive, re-enables UART RX IRQ
+```
+
+### Shared Register Memory
+
+Both transports share a single register bank owned by `modbus_mem.c`.  A FreeRTOS mutex protects the bank.  All access goes through `mb_mem_get_mutex()` / `mb_mem_release_mutex()` — the mutex is never exported directly.
+
+| Register bank | Start address | Count | Notes |
+|---------------|--------------|-------|-------|
+| Holding | 1 | 100 | Read/write via FC03 / FC16 |
+| Input | 1 | 100 | Read-only via FC04 |
+| Coil | — | — | Not implemented |
+| Discrete | — | — | Not implemented |
+
+Addresses and counts are set in `Inc/modbus/port_addresses.h`.
+
+### Port Layer Mux
+
+The FreeModbus port layer (`portserial.c`) contains a single `bUsbActive` flag.
+When true, the three FreeModbus I/O functions behave as follows:
+
+| Function | UART path (`bUsbActive == false`) | USB path (`bUsbActive == true`) |
+|----------|----------------------------------|--------------------------------|
+| `xMBPortSerialGetByte()` | reads `USART2->RDR` | returns `usbPendingByte` (staged by injection loop) |
+| `xMBPortSerialPutByte()` | writes `USART2->TDR` | calls `portserial_usb_put_byte()` (accumulate) |
+| `vMBPortSerialEnable(FALSE,TRUE)` | enables USART2 TXEIE | drives TX FSM synchronously, flushes CDC buffer |
+| `vMBPortSerialEnable(TRUE,FALSE)` | enables USART2 RXNEIE | clears `bUsbActive`, re-enables USART2 RXNEIE |
+
+`eMBPoll()` and all register callbacks are completely unaware of which transport delivered the frame.
+
+---
 
 ## Features
-This will be a Modbus Slave device that supports RTU and ASCII serial connections.
 
 ### Communications
-It will allow communications of USB (virtual com port) and a USART configured as a UART.  
-Pins arbiraritly chosen based on dev board ease of access.
 
-UART configuration defaults to 115200 baud, 8 data bits, 1 stop bit, no parity.
-This (future) will be configuralbe in the Modbus registers.
+- **UART** — USART2, 115200 baud 8N1.  Configurable via Modbus registers (future).
+- **USB CDC** — virtual COM port via STM32L5 USB FS.  Baud rate setting ignored (USB ignores line coding for data routing).  Connect with any terminal: `screen /dev/ttyACM0 115200` on Linux, any COMxx port on Windows.
+
+Both ports speak Modbus RTU.  In DYNAMIC mode the first master to send a frame claims the bus for 5 seconds of inactivity.
+
+### Supported Modbus Function Codes
+
+| FC | Name | Notes |
+|----|------|-------|
+| 03 | Read Holding Registers | |
+| 04 | Read Input Registers | |
+| 16 (0x10) | Write Multiple Registers | |
+
+All other function codes return exception 01 (Illegal Function).
 
 ### LEDs
-There are 3 LED's on the board:
-- RED   - FreeModbus debug for timer enabled, will set/clear LED when timer is enabled/disabled
-- BLUE  - Toggled when watchdog is pet 
-- GREEN - TBD
+
+| LED | Behaviour |
+|-----|-----------|
+| RED | FreeModbus timer debug — set when LPTIM1 t3.5 timer is enabled, cleared when disabled (`MB_TIMER_DEBUG_RED == 1`) |
+| BLUE | Toggled every watchdog pet cycle (`WD_DEBUG_BLUE == 1`) |
+| GREEN | Set while USB owns the Modbus port (frame being processed), cleared on release (`USB_MODBUS_ACTIVE_DEBUG_GREEN == 1`) |
+
+---
 
 ## Building
 
 ### 1. Clone and initialise submodules
-
-The freemodbus library is a git submodule.  After cloning, initialise it before
-attempting a build:
 
 ```sh
 git clone <repo-url>
@@ -57,130 +179,156 @@ cd stm32-freemodbus-freertos-usb-uart
 git submodule update --init --recursive
 ```
 
-### 2. Build with GNU Tools for STM32 (command line)
+### 2. Command-line build
 
-The build system is the makefile generated by STM32CubeIDE located in the
-`Debug/` or `Release/`directories.  You need **GNU Tools for STM32 14.3.rel1** (or compatible
-`arm-none-eabi-gcc`) on your PATH.
+Requires **GNU Tools for STM32 14.3.rel1** (or compatible `arm-none-eabi-gcc`) on `PATH`.
 
 ```sh
 cd Debug
 make -j4 all
 ```
 
-Output artifacts are written to `Debug/`:
-
-| File | Description |
-|------|-------------|
+| Output file | Description |
+|-------------|-------------|
 | `stm32-freertos-freemodbus-usb-uart.elf` | Flashable ELF image |
 | `stm32-freertos-freemodbus-usb-uart.map` | Linker map |
 | `stm32-freertos-freemodbus-usb-uart.list` | Disassembly listing |
-
-To clean the build:
 
 ```sh
 make clean
 ```
 
-### 3. Build with STM32CubeIDE
+### 3. STM32CubeIDE
 
-Open the project directly in STM32CubeIDE (File → Open Projects from File
-System, select the repo root).  The `.project` and `.cproject` files are
-already committed.  Select the **Debug** build configuration and click
-**Build Project** (or `Ctrl+B`).
+Open the project: File → Open Projects from File System → select repo root.
+The `.project` and `.cproject` files are committed.  Select the **Debug** build configuration and press `Ctrl+B`.
 
-STM32CubeIDE bundles its own copy of GNU Tools for STM32 so no separate
-toolchain installation is required.
+> `Generated_Project/` is a CubeMX reference only — do not import it.
 
-> **Note:** The `Generated_Project/` folder is a separate CubeMX reference
-> project.  Do not import it — only the repo root is the active project.
+---
 
 ## Project Structure
 
 ```
-├── Docs/                          Datasheets and board schematics (PDFs)
+├── Docs/                              Datasheets and board schematics (PDFs)
 │
 ├── Drivers/
-│   ├── CMSIS/                     ARM CMSIS core + STM32L5 device headers
-│   └── STM32L5xx_HAL_Driver/      STM32L5 HAL/LL driver source and headers
+│   ├── CMSIS/                         ARM CMSIS core + STM32L5 device headers
+│   └── STM32L5xx_HAL_Driver/          STM32L5 HAL/LL driver source and headers
 │
-├── Generated_Project/             Original STM32CubeMX-generated FreeRTOS
-│                                  Timers example.  Used as a reference when
-│                                  regenerating the project — do not edit.
+├── Generated_Project/                 Original STM32CubeMX reference project.
+│                                      Do not edit or import.
 │
 ├── Inc/
 │   ├── app/
-│   │   ├── FreeRTOSConfig.h       FreeRTOS kernel configuration
-│   │   └── system.h               Application-level shared definitions
+│   │   ├── FreeRTOSConfig.h           FreeRTOS kernel configuration
+│   │   └── system.h                   Task stack sizes and priorities
 │   ├── hw/
-│   │   ├── dma.h                  DMA peripheral interface
-│   │   ├── gpio.h                 GPIO peripheral interface
-│   │   ├── icache.h               Instruction cache interface
-│   │   ├── lptim.h                LPTIM one-shot timer interface
-│   │   ├── stm32l5xx_hal_conf.h   HAL module enable/disable configuration
-│   │   ├── stm32l5xx_it.h         Interrupt handler declarations
-│   │   ├── usart.h                USART/UART peripheral interface
-│   │   ├── usart_common.h         Shared USART types and constants
-│   │   ├── usb.h                  USB peripheral interface
-│   │   └── watchdog.h             IWDG watchdog interface
+│   │   ├── dma.h                      DMA peripheral interface
+│   │   ├── gpio.h                     GPIO peripheral interface
+│   │   ├── icache.h                   Instruction cache interface
+│   │   ├── lptim.h                    LPTIM one-shot timer interface
+│   │   ├── stm32l5xx_hal_conf.h       HAL module enable/disable configuration
+│   │   ├── stm32l5xx_it.h             Interrupt handler declarations
+│   │   ├── usart.h                    USART/UART peripheral interface
+│   │   ├── usart_common.h             Shared USART types and constants
+│   │   ├── usb_device.h               USB device init interface
+│   │   ├── usbd_cdc_if.h              USB CDC class interface (CDC_Transmit_FS)
+│   │   ├── usbd_conf.h                USB device stack hardware configuration
+│   │   ├── usbd_desc.h                USB device descriptor strings
+│   │   └── watchdog.h                 IWDG watchdog interface
 │   ├── modbus/
-│   │   ├── modbus_task.h          Modbus FreeRTOS task entry point
-│   │   ├── port.h                 FreeModbus port layer public interface
-│   │   └── port_internal.h        FreeModbus port layer internal types
-│   └── main.h                     Top-level includes and pin definitions
+│   │   ├── modbus_mem.h               Shared register bank API
+│   │   ├── modbus_port_ownership.h    Port ownership arbitration API
+│   │   ├── modbus_task.h         UART Modbus task entry point
+│   │   ├── modbus_usb.h               USB Modbus adapter entry points
+│   │   ├── port_addresses.h           Register start addresses, counts, slave address
+│   │   ├── port.h                     FreeModbus port layer public interface
+│   │   ├── port_internal.h            Hardware macros for USART2 and LPTIM1
+│   │   ├── portserial.h               Transport selection (COMMS_MODBUS_PORT)
+│   │   └── portserial_usb.h           USB serial port API + transport mux API
+│   └── main.h                         Top-level includes and pin definitions
 │
 ├── Middlewares/Third_Party/
-│   ├── freemodbus/                FreeModbus stack (third-party, unmodified)
-│   └── FreeRTOS/                  FreeRTOS kernel (third-party, unmodified)
+│   ├── freemodbus/                    FreeModbus stack (git submodule, unmodified)
+│   └── FreeRTOS/                      FreeRTOS kernel (unmodified)
 │
 ├── Src/
 │   ├── app/
-│   │   └── system.c               Application-level initialisation helpers
+│   │   └── system.c                   Task creation (conditional on COMMS_MODBUS_PORT)
 │   ├── hw/
-│   │   ├── dma.c                  DMA peripheral initialisation
-│   │   ├── gpio.c                 GPIO peripheral initialisation
-│   │   ├── icache.c               Instruction cache initialisation
-│   │   ├── lptim.c                LPTIM one-shot timer driver (used by FreeModbus T3.5)
-│   │   ├── startup/
-│   │   │   └── startup_stm32l552xx.s  Cortex-M33 startup and vector table
-│   │   ├── stm32l5xx_hal_msp.c    HAL MSP (low-level peripheral clock/pin) callbacks
+│   │   ├── dma.c                      DMA peripheral initialisation
+│   │   ├── gpio.c                     GPIO peripheral initialisation
+│   │   ├── icache.c                   Instruction cache initialisation
+│   │   ├── lptim.c                    LPTIM one-shot timer (FreeModbus t3.5)
+│   │   ├── stm32l5xx_hal_msp.c        HAL MSP peripheral clock/pin callbacks
 │   │   ├── stm32l5xx_hal_timebase_tim.c  HAL tick timebase (TIM6)
-│   │   ├── stm32l5xx_it.c         Interrupt service routines
-│   │   ├── system_stm32l5xx.c     SystemInit and system clock configuration
-│   │   ├── usart.c                USART/UART driver (Modbus serial port)
-│   │   ├── usb.c                  USB CDC peripheral initialisation
-│   │   └── watchdog.c             IWDG hardware watchdog driver
+│   │   ├── stm32l5xx_it.c             Interrupt service routines
+│   │   ├── system_stm32l5xx.c         SystemInit and clock configuration
+│   │   ├── usart.c                    USART/UART driver (Modbus serial port)
+│   │   ├── usb_device.c               USB device stack initialisation
+│   │   ├── usbd_cdc_if.c              USB CDC callbacks — routes RX bytes to usbRxStream
+│   │   ├── usbd_conf.c                USB device stack hardware configuration
+│   │   ├── usbd_desc.c                USB device descriptor strings
+│   │   └── watchdog.c                 IWDG hardware watchdog driver
 │   ├── modbus/
-│   │   ├── modbus_task.c          FreeRTOS Modbus task + register callbacks
-│   │   ├── portevent.c            FreeModbus port — event queue (FreeRTOS queue)
-│   │   ├── portserial.c           FreeModbus port — serial (USART2)
-│   │   └── porttimer.c            FreeModbus port — T3.5 timer (LPTIM1)
-│   ├── main.c                     Application entry point, peripheral init, scheduler start
-│   ├── syscalls.c                 Newlib OS hook stubs (_read, _write, _exit, etc.)
-│   └── sysmem.c                   Newlib heap stub (_sbrk)
+│   │   ├── modbus_mem.c               Shared holding/input register arrays + mutex
+│   │   ├── modbus_port_ownership.c    Binary semaphore + one-shot timer for bus arbitration
+│   │   ├── modbus_task.c         modbus_task: eMBInit/eMBPoll loop + register callbacks
+│   │   ├── modbus_usb.c               usb_task helper: frame accumulation, pre-validation, injection
+│   │   ├── portevent.c                FreeModbus port — event queue (FreeRTOS queue, context-aware)
+│   │   ├── portserial.c               FreeModbus port — USART2 byte I/O + USB transport mux
+│   │   ├── portserial_usb.c           USB CDC byte layer — stream buffer, TX accumulation buffer
+│   │   └── porttimer.c                FreeModbus port — LPTIM1 t3.5 timer
+│   ├── main.c                         Entry point: peripheral init, scheduler start
+│   ├── syscalls.c                     Newlib OS hook stubs
+│   └── sysmem.c                       Newlib heap stub
+│
+└── CLAUDE.md                          Coding standards for AI-assisted development
 ```
 
+---
+
 ## Configuration
-MB_TIMER_DEBUG_RED == 1 will turn on/off RED LED when modbus timer is enabled/disabled
-WD_DEBUG_BLUE == 1 will toggle every time the watchdog is pet
+
+| Define | Location | Effect |
+|--------|----------|--------|
+| `COMMS_MODBUS_PORT` | `Inc/modbus/portserial.h` | Select transport: `COMMS_MODBUS_UART`, `COMMS_MODBUS_USB`, or `COMMS_MODBUS_DYNAMIC` |
+| `MB_TIMER_DEBUG_RED` | build flags / `port_internal.h` | `1` = toggle RED LED on FreeModbus timer events |
+| `WD_DEBUG_BLUE` | build flags | `1` = toggle BLUE LED on each watchdog pet |
+| `USB_MODBUS_ACTIVE_DEBUG_GREEN` | build flags | `1` = light GREEN LED while USB owns the Modbus port, off when released |
+
+Register addresses and counts: `Inc/modbus/port_addresses.h`.
+Modbus defaults (slave address 0x0A, 115200 8N1): `Src/modbus/modbus_task.c`.
+
+---
+
 ## Versions
 
-| Tool / Library       | Version      |
-|----------------------|--------------|
-| STM32CubeMX          | 6.17.0       |
-| STM32CubeIDE         | 2.1.1        |
-| STM32Cube FW         | L5_V1.5.0    |
+| Tool / Library | Version |
+|----------------|---------|
+| STM32CubeMX | 6.17.0 |
+| STM32CubeIDE | 2.1.1 |
+| STM32Cube FW L5 | V1.5.0 |
+| GNU Tools for STM32 | 14.3.rel1 |
 
-## Complaints 
-STM32CubeMX is very helpful for generating a project on the fly but the naming conventions and how some of this code is structured is frustrating.  That coupled with FreeRTOS and my own personal development rules (hammered in my by a coding standard) causes:
+---
 
-- Different case developement - I'm a fan of snake_case, but I see a mix of camelCase, and some other ways . I've tried to conform but this is just part of develping with 3rd party libs.
+## Known Limitations / TODOs
 
-- Issues with how code is generated.  MX is very helpful but I've found myself improving their output to something more maintainable, reusable, and readable.  
+- Coil and discrete input registers not implemented (return exception 01).
+- UART configuration (baud rate, parity) not yet Modbus-configurable — hardcoded in `modbus_task.c`.
+- Holding register values not persisted to flash across power cycles.
+- No DMA on USART2 — each byte goes through an ISR.  FreeModbus's byte-at-a-time model makes DMA integration non-trivial.
+- CRC computation for the response in the USB path requires a second read of the register bank to calculate the CRC separately from the TX data accumulation path (this is handled by FreeModbus itself and is not a concern for normal operation).
 
-- FreeModbus is old, and not really structured for modern MCU's.  But its still popular.  I may do a port of nanoModbus in the future.  All that to say, I don't know if I can make DMA work well here, or if I'd have to make substantial changes to FreeModbus to allow it.  That's all TBD.
+---
 
-- I'm sure there are more but those are the three biggest ones. I've used the CubeMX to generate a bare bones example with some additions to help with FreeModbus development.  This is my first time using CubeMX and I'm not a fan.  Although it's helpful to some degree but I've heavily edited it.  I will also admit it does help get development done faster, I just have some nitpicks about how it generates code.
+## Complaints
 
-- Editing in 2 different environments has caused some formatting woes.  I'll work to resolve them soon.
+STM32CubeMX is convenient for project scaffolding but its generated code structure conflicts with maintainability goals:
 
+- Mixed naming conventions (camelCase, PascalCase, snake_case) from three different sources (HAL, FreeRTOS, application).
+- Generated code structure is harder to maintain than hand-written equivalents — most generated files have been substantially rewritten.
+- FreeModbus is old and designed for single-port bare-metal use.  It cannot be instantiated twice (all state is in module-level statics), which is why the USB port uses a transport mux into the single FreeModbus instance rather than a second stack instance.
+- DMA integration with FreeModbus would require meaningful changes to the library.  Deferred.
