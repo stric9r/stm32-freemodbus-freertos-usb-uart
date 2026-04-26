@@ -16,14 +16,31 @@ Board chosen for availability — no special reason beyond that.
 Project generated with STM32CubeMX, developed in VSCode and STM32CubeIDE.
 Base example was the FreeRTOS Timers template, heavily modified.
 
-> Admission — Claude Code was used to assist with documentation and implementation.
-> Proper prompting is key!
+> Admission — Claude Code was used to assist with documentation and some implementation.
+> Proper prompting is key!  I'm not a fan of AI but its a tool and its going to be here
+> regardless.  So I rather use it to assist and get stuff out faster but with quality.
+>
+> My mentality is to use AI, but don't trust.  Instead be skeptical and verify.
+> Any AI usage was used mainly to help with quick documentation or nuance changes.
+> Any larger changes are done with heavy planning in markdown files then implementation.
 
 ---
 
 ## Theory of Operation
 
 ### Project Build Configuration
+
+#### Port Headers
+
+The Modbus port layer is split across several headers, each with a distinct configuration scope:
+
+| Header | Configures | Porting role |
+|--------|-----------|--------------|
+| [`Inc/modbus/portserial.h`](Inc/modbus/portserial.h) | Transport mode (`COMMS_MODBUS_PORT`); UART defaults — baud rate, parity, stop bits, RTU/ASCII mode | Standard porting file; `COMMS_MODBUS_PORT` is a USB-specific addition |
+| [`Inc/modbus/port_internal.h`](Inc/modbus/port_internal.h) | Hardware peripheral bindings: which LPTIM instance drives t3.5 timing (`MB_TIMER`), which USART instance is the Modbus serial port (`MB_SERIAL`), associated IRQ names and register macros | Standard porting — change only this file to migrate to a different USART or timer |
+| [`Inc/modbus/port_addresses.h`](Inc/modbus/port_addresses.h) | Modbus slave address (`DEFAULT_SLAVE_ADDR`); holding and input register start addresses and counts; coil and discrete register placeholders | Application configuration — not hardware-specific |
+| [`Inc/modbus/port.h`](Inc/modbus/port.h) | FreeModbus type aliases (`BOOL`, `UCHAR`, `USHORT`, etc.); critical section macros mapped to `__disable_irq` / `__enable_irq` | Standard FreeModbus porting layer — minimal changes from the reference port |
+| [`Inc/modbus/portserial_usb.h`](Inc/modbus/portserial_usb.h) | USB CDC byte layer API (`portserial_usb_init`, `portserial_usb_flush_tx`); transport-mux API (`vMBPortSetUsbActive`, `vMBPortUsbInjectFrame`); RX stream buffer handle (`usbRxStream`) | Added for USB — no equivalent in a UART-only port |
 
 #### Transport Selection
 
@@ -38,18 +55,6 @@ A compile-time define in `Inc/modbus/portserial.h` selects which physical port t
 ```
 
 In **DYNAMIC** mode both ports are active simultaneously.  A binary semaphore in `modbus_port_ownership.c` ensures only one transport processes frames at a time.  The first complete frame to arrive claims the bus.  A 5-second inactivity one-shot FreeRTOS timer releases the bus automatically so the other transport can take over.
-
-#### Port Headers
-
-The Modbus port layer is split across several headers, each with a distinct configuration scope:
-
-| Header | Configures | Porting role |
-|--------|-----------|--------------|
-| [`Inc/modbus/portserial.h`](Inc/modbus/portserial.h) | Transport mode (`COMMS_MODBUS_PORT`); UART defaults — baud rate, parity, stop bits, RTU/ASCII mode | Standard porting file; `COMMS_MODBUS_PORT` is a USB-specific addition |
-| [`Inc/modbus/port_internal.h`](Inc/modbus/port_internal.h) | Hardware peripheral bindings: which LPTIM instance drives t3.5 timing (`MB_TIMER`), which USART instance is the Modbus serial port (`MB_SERIAL`), associated IRQ names and register macros | Standard porting — change only this file to migrate to a different USART or timer |
-| [`Inc/modbus/port_addresses.h`](Inc/modbus/port_addresses.h) | Modbus slave address (`DEFAULT_SLAVE_ADDR`); holding and input register start addresses and counts; coil and discrete register placeholders | Application configuration — not hardware-specific |
-| [`Inc/modbus/port.h`](Inc/modbus/port.h) | FreeModbus type aliases (`BOOL`, `UCHAR`, `USHORT`, etc.); critical section macros mapped to `__disable_irq` / `__enable_irq` | Standard FreeModbus porting layer — minimal changes from the reference port |
-| [`Inc/modbus/portserial_usb.h`](Inc/modbus/portserial_usb.h) | USB CDC byte layer API (`portserial_usb_init`, `portserial_usb_flush_tx`); transport-mux API (`vMBPortSetUsbActive`, `vMBPortUsbInjectFrame`); RX stream buffer handle (`usbRxStream`) | Added for USB — no equivalent in a UART-only port |
 
 ### Tasks
 
@@ -286,22 +291,6 @@ The `.project` and `.cproject` files are committed.  Select the **Debug** build 
 │
 └── CLAUDE.md                          Coding standards for AI-assisted development
 ```
-
----
-
-## Configuration
-
-| Define | Location | Effect |
-|--------|----------|--------|
-| `COMMS_MODBUS_PORT` | `Inc/modbus/portserial.h` | Select transport: `COMMS_MODBUS_UART`, `COMMS_MODBUS_USB`, or `COMMS_MODBUS_DYNAMIC` |
-| `MB_TIMER_DEBUG_RED` | build flags / `port_internal.h` | `1` = toggle RED LED on FreeModbus timer events |
-| `WD_DEBUG_BLUE` | build flags | `1` = toggle BLUE LED on each watchdog pet |
-| `USB_MODBUS_ACTIVE_DEBUG_GREEN` | build flags | `1` = light GREEN LED while USB owns the Modbus port, off when released |
-
-Register addresses and counts: `Inc/modbus/port_addresses.h`.
-Modbus defaults (slave address 0x0A, 115200 8N1): `Src/modbus/modbus_task.c`.
-
----
 
 ## Versions
 
