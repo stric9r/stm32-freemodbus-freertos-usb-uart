@@ -1,3 +1,6 @@
 [submodule "Middlewares/Third_Party/freemodbus"]
 	path = Middlewares/Third_Party/freemodbus
 	url = git@github.com:cwalter-at/freemodbus.git
+[submodule "Middlewares/utility_belt"]
+	path = Middlewares/utility_belt
+	url = git@github.com:stric9r/utility_belt.git
