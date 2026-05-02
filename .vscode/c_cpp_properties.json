@@ -1,37 +1,87 @@
 {
     "configurations": [
         {
-            "name": "STM32L552 (arm-none-eabi)",
+            "name": "Debug",
             "includePath": [
                 "${workspaceFolder}/Inc",
-                "${workspaceFolder}/Inc/hw",
-                "${workspaceFolder}/Inc/app",
-                "${workspaceFolder}/Inc/modbus",
                 "${workspaceFolder}/Drivers/STM32L5xx_HAL_Driver/Inc",
                 "${workspaceFolder}/Drivers/STM32L5xx_HAL_Driver/Inc/Legacy",
-                "${workspaceFolder}/Drivers/CMSIS/Device/ST/STM32L5xx/Include",
-                "${workspaceFolder}/Drivers/CMSIS/Include",
-                "${workspaceFolder}/Drivers/CMSIS/RTOS2/Include",
-                "${workspaceFolder}/Drivers/BSP/STM32L5xx_Nucleo",
                 "${workspaceFolder}/Middlewares/Third_Party/FreeRTOS/Source/include",
                 "${workspaceFolder}/Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2",
                 "${workspaceFolder}/Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM33_NTZ/non_secure",
+                "${workspaceFolder}/Drivers/CMSIS/RTOS2/Include",
+                "${workspaceFolder}/Drivers/BSP/STM32L5xx_Nucleo",
+                "${workspaceFolder}/Drivers/CMSIS/Device/ST/STM32L5xx/Include",
+                "${workspaceFolder}/Drivers/CMSIS/Include",
+                "${workspaceFolder}/Src/port",
                 "${workspaceFolder}/Middlewares/Third_Party/freemodbus/modbus/include",
-                "${workspaceFolder}/Middlewares/Third_Party/STM32_USB_Device_Library/Class/Inc",
-                "${workspaceFolder}/Middlewares/Third_Party/STM32_USB_Device_Library/Core/Inc"
+                "${workspaceFolder}/Inc/hw",
+                "${workspaceFolder}/Inc/modbus",
+                "${workspaceFolder}/Middlewares/Third_Party/freemodbus/modbus/rtu",
+                "${workspaceFolder}/Inc/app",
+                "${workspaceFolder}/Middlewares/STM32_USB_Device_Library/Class/CDC/Inc",
+                "${workspaceFolder}/Middlewares/STM32_USB_Device_Library/Core/Inc",
+                "${workspaceFolder}/Middlewares/Third_Party/freemodbus/modbus/ascii"
             ],
             "defines": [
+                "DEBUG",
+                "STM32_CMAKE",
+                "MB_TIMER_DEBUG_RED=1",
+                "WD_DEBUG_BLUE=1",
+                "USB_MODBUS_ACTIVE_DEBUG_GREEN=1",
                 "USE_HAL_DRIVER",
-                "STM32L552xx",
-                "DEBUG"
+                "STM32L552xx"
             ],
             "compilerPath": "/opt/st/stm32cubeide_2.1.1/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.14.3.rel1.linux64_1.0.100.202602081740/tools/bin/arm-none-eabi-gcc",
             "cStandard": "c11",
             "cppStandard": "c++14",
             "intelliSenseMode": "gcc-arm",
             "compilerArgs": [
-                "-mcpu=cortex-m33",
                 "-mthumb",
+                "-mcpu=cortex-m33",
+                "-mfpu=fpv5-sp-d16",
+                "-mfloat-abi=hard"
+            ]
+        },
+        {
+            "name": "Release",
+            "includePath": [
+                "${workspaceFolder}/Inc",
+                "${workspaceFolder}/Drivers/STM32L5xx_HAL_Driver/Inc",
+                "${workspaceFolder}/Drivers/STM32L5xx_HAL_Driver/Inc/Legacy",
+                "${workspaceFolder}/Middlewares/Third_Party/FreeRTOS/Source/include",
+                "${workspaceFolder}/Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2",
+                "${workspaceFolder}/Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM33_NTZ/non_secure",
+                "${workspaceFolder}/Drivers/CMSIS/RTOS2/Include",
+                "${workspaceFolder}/Drivers/BSP/STM32L5xx_Nucleo",
+                "${workspaceFolder}/Drivers/CMSIS/Device/ST/STM32L5xx/Include",
+                "${workspaceFolder}/Drivers/CMSIS/Include",
+                "${workspaceFolder}/Src/port",
+                "${workspaceFolder}/Inc/hw",
+                "${workspaceFolder}/Inc/modbus",
+                "${workspaceFolder}/Middlewares/Third_Party/freemodbus/modbus/include",
+                "${workspaceFolder}/Middlewares/Third_Party/freemodbus/modbus/rtu",
+                "${workspaceFolder}/Inc/app",
+                "${workspaceFolder}/Middlewares/STM32_USB_Device_Library/Class/CDC/Inc",
+                "${workspaceFolder}/Middlewares/STM32_USB_Device_Library/Core/Inc",
+                "${workspaceFolder}/Middlewares/Third_Party/freemodbus/include/rtu",
+                "${workspaceFolder}/Middlewares/Third_Party/freemodbus/include/ascii"
+            ],
+            "defines": [
+                "STM32_CMAKE",
+                "MB_TIMER_DEBUG_RED=1",
+                "WD_DEBUG_BLUE=1",
+                "USB_MODBUS_ACTIVE_DEBUG_GREEN=1",
+                "USE_HAL_DRIVER",
+                "STM32L552xx"
+            ],
+            "compilerPath": "/opt/st/stm32cubeide_2.1.1/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.14.3.rel1.linux64_1.0.100.202602081740/tools/bin/arm-none-eabi-gcc",
+            "cStandard": "c11",
+            "cppStandard": "c++14",
+            "intelliSenseMode": "gcc-arm",
+            "compilerArgs": [
+                "-mthumb",
+                "-mcpu=cortex-m33",
                 "-mfpu=fpv5-sp-d16",
                 "-mfloat-abi=hard"
             ]
