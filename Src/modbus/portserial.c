@@ -75,6 +75,7 @@
 #include "port.h"
 #include "port_internal.h"
 #include "portserial_usb.h"
+#include "modbus_port_ownership.h"
 
 #include "FreeRTOS.h"
 #include "task.h"
@@ -317,9 +318,12 @@ void vMBPortSerialEnable( BOOL rxEnable, BOOL txEnable )
             /* --- USB restore ---
              * Called by xMBRTUTransmitFSM() when the last TX byte is sent.
              * Clear the USB flag so subsequent FreeModbus calls go back to
-             * UART, and re-enable the UART RX interrupt.                      */
+             * UART, re-enable the UART RX interrupt, and release ownership
+             * immediately so the next USB request is not blocked until the
+             * 100ms inactivity timer fires.                                    */
             bUsbActive = false;
             MB_SERIAL_ENABLE_RX_IRQ();
+            modbus_port_ownership_release();
         }
         /* Any other combination (both true/false) is not issued by FreeModbus
          * during normal operation — fall through and return without touching

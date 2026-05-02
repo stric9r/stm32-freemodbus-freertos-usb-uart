@@ -6,5 +6,6 @@
 void modbus_port_ownership_init(void);
 bool modbus_port_ownership_try_claim(void);
 void modbus_port_ownership_refresh(void);
+void modbus_port_ownership_release(void);
 
 #endif /* MODBUS_PORT_OWNERSHIP_H */

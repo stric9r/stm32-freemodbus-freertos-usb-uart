@@ -32,6 +32,8 @@
 #include "usb_device.h"
 #endif
 
+#include "usb_task.h"
+
 /* Idle task — required by configSUPPORT_STATIC_ALLOCATION */
 static StaticTask_t idleTaskTcb;
 static StackType_t  idleTaskStack[configMINIMAL_STACK_SIZE];
@@ -48,26 +50,6 @@ static StackType_t  modbusUartTaskStack[MODBUS_TASK_STACK_SIZE];
 static TaskHandle_t usbTaskHandle;
 static StaticTask_t usbTaskTcb;
 static StackType_t  usbTaskStack[USB_TASK_STACK_SIZE];
-
-/**
- * @brief USB task — initialises the USB CDC port then runs the Modbus USB handler.
- *
- * modbus_usb_init() must be called before MX_USB_Device_Init() so the RX stream
- * buffer exists before the first USB ISR fires.
- *
- * USBD_malloc is mapped to USBD_static_malloc (Inc/hw/usbd_conf.h) — no
- * FreeRTOS heap dependency; safe to call from task context.
- */
-static void usb_task(void * argument)
-{
-    (void)argument;
-    modbus_usb_init();
-    MX_USB_Device_Init();
-    for (;;)
-    {
-        (void)modbus_usb_run();   /* sleeps until USB data arrives */
-    }
-}
 #endif
 
 void system_app_init(void)
