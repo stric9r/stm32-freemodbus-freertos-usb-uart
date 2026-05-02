@@ -220,11 +220,9 @@ uint8_t CDC_Transmit_FS(uint8_t* Buf, uint16_t Len)
   */
 static int8_t CDC_TransmitCplt_FS(uint8_t *Buf, uint32_t *Len, uint8_t epnum)
 {
-  /* No action needed.  Modbus is strictly synchronous (one request, one
-   * response) so the master will not send the next request until after it
-   * has received the response.  By the time CDC_Receive_FS fires for the
-   * next frame, the previous CDC_Transmit_FS transfer is guaranteed complete.
-   * There is no need to track transmit completion at the application level.  */
+  /* No action needed.  portserial_usb_flush_tx retries on USBD_BUSY with
+   * 1 ms delays, so by the time a second response is attempted TxState will
+   * have been cleared here already.                                          */
   UNUSED(Buf);
   UNUSED(Len);
   UNUSED(epnum);

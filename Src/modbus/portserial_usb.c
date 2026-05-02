@@ -23,6 +23,7 @@
 
 #include "FreeRTOS.h"
 #include "stream_buffer.h"
+#include "task.h"
 
 #include <assert.h>
 
@@ -37,6 +38,8 @@ StreamBufferHandle_t        usbRxStream;
 
 static uint8_t  usbTxBuf[USB_TX_BUF_SIZE];
 static uint16_t usbTxLen;
+
+#define MAX_RETRY_ATTEMPTS  5u
 
 /**
  * @brief Initialise the USB serial port layer.
@@ -78,18 +81,30 @@ void portserial_usb_put_byte(uint8_t const b)
  * Sends the accumulated response frame as a single USB CDC transfer, then
  * resets the buffer length to zero for the next frame.
  *
- * @note CDC_Transmit_FS returns USBD_BUSY if a previous transfer has not
- *       completed.  At Modbus data rates this should never happen, but the
- *       return value is cast to void — if needed, add retry logic here.
- *       @todo [2026-04-25] Add optional vTaskDelay(pdMS_TO_TICKS(2u)) pre-delay
- *             if strict host applications require a t3.5 silence before the
- *             response.
+ * @note CDC_Transmit_FS returns USBD_BUSY when the previous IN transfer has
+ *       not yet been acknowledged by the host.  A fast master can receive the
+ *       USB IN packet and immediately send the next OUT packet before the
+ *       TransmitCplt interrupt fires and clears TxState.  Retrying with 1 ms
+ *       delays handles this: the IN transfer completes within 1-2 ms on USB
+ *       Full Speed, so MAX_RETRY_ATTEMPTS gives adequate headroom.
  */
 void portserial_usb_flush_tx(void)
 {
-    if (usbTxLen > 0u)
+    if (0u != usbTxLen)
     {
-        (void)CDC_Transmit_FS(usbTxBuf, usbTxLen);
+        uint8_t result;
+        uint8_t attempts = 0u;
+
+        do
+        {
+            result = CDC_Transmit_FS(usbTxBuf, usbTxLen);
+            if (USBD_OK != result)
+            {
+                vTaskDelay(pdMS_TO_TICKS(1u));
+                attempts++;
+            }
+        } while ((USBD_OK != result) && (attempts < MAX_RETRY_ATTEMPTS));
+
         usbTxLen = 0u;
     }
 }
