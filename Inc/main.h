@@ -30,6 +30,7 @@ extern "C" {
 // @todo [2026-4-12] Rename main.h to common.h or something similar
 
 void Error_Handler(void);
+void SystemClock_Config(void);
 
 
 #define GPIO_BUTTON_Pin GPIO_PIN_13

@@ -49,6 +49,7 @@ extern "C" {
 void DMA1_Channel3_IRQHandler(void);
 void TIM6_IRQHandler(void);
 void USART2_IRQHandler(void);
+void USB_FS_IRQHandler(void);
 /* USER CODE BEGIN EFP */
 
 /* USER CODE END EFP */

@@ -1,8 +1,9 @@
+
 /**
   ******************************************************************************
-  * @file    usb.h
-  * @brief   This file contains all the function prototypes for
-  *          the usb.c file
+  * @file           : usbd_cdc_if.h
+  * @version        : v3.0_Cube
+  * @brief          : Header for usbd_cdc_if.c file.
   ******************************************************************************
   * @attention
   *
@@ -16,24 +17,29 @@
   ******************************************************************************
   */
 
-#ifndef __USB_H__
-#define __USB_H__
+#ifndef __USBD_CDC_IF_H__
+#define __USBD_CDC_IF_H__
 
 #ifdef __cplusplus
-extern "C" {
+ extern "C" {
 #endif
 
+#include "usbd_cdc.h"
 
-#include "main.h"
 
+/* Define size for the receive and transmit buffer over CDC */
+#define APP_RX_DATA_SIZE  2048
+#define APP_TX_DATA_SIZE  2048
 
-extern PCD_HandleTypeDef hpcd_USB_FS;
+/** CDC Interface callback. */
+extern USBD_CDC_ItfTypeDef USBD_Interface_fops_FS;
 
-void usb_init(void);
+uint8_t CDC_Transmit_FS(uint8_t* Buf, uint16_t Len);
+
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* __USB_H__ */
+#endif /* __USBD_CDC_IF_H__ */
 

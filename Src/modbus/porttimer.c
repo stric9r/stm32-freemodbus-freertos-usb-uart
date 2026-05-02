@@ -2,6 +2,13 @@
 #include "mbport.h"
 #include "port_internal.h"
 
+/* portserial_usb.h declares xMBPortIsUsbActive() (implemented in portserial.c).
+ * Including the header (rather than a raw extern) keeps the dependency explicit
+ * and avoids cross-module coupling via forward declarations.
+ * See portserial.c for the full explanation of the USB transport mux and
+ * why timer arming must be suppressed during USB frame injection.           */
+#include "portserial_usb.h"
+
 /**
  * @brief  Initialize the FreeModbus hardware timer.
  *
@@ -35,7 +42,16 @@ BOOL xMBPortTimersInit( USHORT usTim1Timerout50us )
  */
 void vMBPortTimersEnable( void )
 {
-    MB_TIMER_ENABLE();
+    /* During USB frame injection xMBRTUReceiveFSM() calls this after every byte
+     * to restart the LPTIM1 t3.5 countdown.  Suppressing it here prevents a
+     * spurious timer expiry between two consecutively injected bytes, which would
+     * post a false EV_FRAME_RECEIVED mid-frame and corrupt the FreeModbus state
+     * machine.  vMBPortUsbInjectFrame() (portserial.c) fires pxMBPortCBTimerExpired()
+     * manually after the last byte to signal the real end-of-frame.              */
+    if (!xMBPortIsUsbActive())
+    {
+        MB_TIMER_ENABLE();
+    }
 }
 
 /**

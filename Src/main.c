@@ -23,16 +23,12 @@
 #include "icache.h"
 #include "lptim.h"
 #include "usart.h"
-#include "usb.h"
 #include "watchdog.h"
 
 #include "FreeRTOS.h"
 #include "task.h"
 
 #include <stdbool.h>
-
-static void SystemClock_Config(void);
-static volatile bool isDebuggerAttached(void);
 
 /**
   * @brief  The application entry point.
@@ -58,8 +54,6 @@ int main(void)
   
   // Modbus lib will init lptimer and usart
  
-  // todo [2026-04-18] USB not ready yet
-  usb_init();
 
   system_app_init();
 
@@ -81,7 +75,7 @@ int main(void)
   * @brief System Clock Configuration
   * @retval None
   */
-static void SystemClock_Config(void)
+void SystemClock_Config(void)
 {
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
   RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
@@ -150,12 +144,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   }
 }
 
-
-static volatile bool isDebuggerAttached(void) 
-{
-  return (CoreDebug->DHCSR & CoreDebug_DHCSR_C_DEBUGEN_Msk) != 0;
-}
-
 /**
   * @brief  This function is executed in case of error occurrence.
   * @retval None
@@ -172,6 +160,18 @@ void Error_Handler(void)
 }
 
 #ifdef USE_FULL_ASSERT
+
+static volatile bool isDebuggerAttached(void);
+
+/** @brief Checks if debugger is attached
+ * 
+ * @retval TRUE if attached, flase otherwise
+*/
+static volatile bool isDebuggerAttached(void) 
+{
+  return (CoreDebug->DHCSR & CoreDebug_DHCSR_C_DEBUGEN_Msk) != 0;
+}
+
 /**
   * @brief  Reports the name of the source file and the source line number
   *         where the assert_param error has occurred.

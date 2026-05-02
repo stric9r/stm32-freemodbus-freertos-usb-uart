@@ -6,8 +6,10 @@ extern "C" {
 #endif
 
 /* Task stack sizes — in words (1 word = 4 bytes on Cortex-M) */
-#define DEFAULT_TASK_STACK_SIZE   128u
-#define MODBUS_TASK_STACK_SIZE    (DEFAULT_TASK_STACK_SIZE + 100u)
+#define BASE_STACK_SIZE           512u
+#define DEFAULT_TASK_STACK_SIZE   (BASE_STACK_SIZE)
+#define MODBUS_TASK_STACK_SIZE    (BASE_STACK_SIZE)  /* 100 is arbitrary right now - depends on your task */
+#define USB_TASK_STACK_SIZE       (BASE_STACK_SIZE * 2u)  /* USB middleware needs ~1.5-2KB headroom */
 
 /* Task priorities */
 #define TASK_IDLE_PRIORITY        (0) /* Just for reference*/

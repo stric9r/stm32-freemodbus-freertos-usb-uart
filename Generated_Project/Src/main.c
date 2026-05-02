@@ -25,7 +25,7 @@
 #include "iwdg.h"
 #include "lptim.h"
 #include "usart.h"
-#include "usb.h"
+#include "usb_device.h"
 #include "gpio.h"
 
 /* Private includes ----------------------------------------------------------*/
@@ -99,7 +99,6 @@ int main(void)
   MX_ICACHE_Init();
   MX_USART2_UART_Init();
   MX_LPTIM1_Init();
-  MX_USB_PCD_Init();
   MX_IWDG_Init();
   MX_CRC_Init();
   /* USER CODE BEGIN 2 */
