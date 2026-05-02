@@ -33,7 +33,7 @@
 #include "semphr.h"
 #include "timers.h"
 
-#define PORT_OWNER_TIMEOUT_MS   500u
+#define PORT_OWNER_TIMEOUT_MS   100u
 
 static StaticSemaphore_t portOwnerSemBuf;
 static SemaphoreHandle_t portOwnerSem;
@@ -115,5 +115,23 @@ void modbus_port_ownership_refresh(void)
 {
 #if COMMS_MODBUS_PORT == COMMS_MODBUS_DYNAMIC
     (void)xTimerReset(portOwnerTimer, 0);
+#endif
+}
+
+/**
+ * @brief Explicitly release port ownership after a completed TX cycle.
+ *
+ * Called from vMBPortSerialEnable(TRUE, FALSE) the moment the USB response is
+ * sent, so the next request can claim ownership immediately rather than waiting
+ * for the PORT_OWNER_TIMEOUT_MS timer.  The timer is stopped to prevent a
+ * redundant semaphore give after the explicit release.
+ *
+ * In non-DYNAMIC builds this is a no-op.
+ */
+void modbus_port_ownership_release(void)
+{
+#if COMMS_MODBUS_PORT == COMMS_MODBUS_DYNAMIC
+    (void)xTimerStop(portOwnerTimer, 0);
+    (void)xSemaphoreGive(portOwnerSem);
 #endif
 }
