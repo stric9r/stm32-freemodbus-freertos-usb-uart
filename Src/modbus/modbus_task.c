@@ -19,7 +19,7 @@
 #include <stddef.h>
 
 #include "stm32l5xx_hal.h"
-#include "watchdog.h"
+#include "system_task.h"
 
 #include "FreeRTOS.h"
 #include "task.h"
@@ -54,6 +54,8 @@ void modbus_task(void * pvParameters)
 {
     (void)pvParameters;
 
+    system_task_register(SYSTEM_TASK_ID_MODBUS);
+
     mb_mem_init();
 
     // todo [2026-04-18] Check if flash has a setting saved for slave address / baud
@@ -69,9 +71,7 @@ void modbus_task(void * pvParameters)
     while (1)
     {
         (void)eMBPoll();
-
-        // todo [2026-04-19] Replace with a centralised health task that pets the watchdog
-        watchdog_pet();
+        system_task_check_in(SYSTEM_TASK_ID_MODBUS);
     }
 }
 

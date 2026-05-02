@@ -15,6 +15,7 @@
   ******************************************************************************
   */
 #include "system.h"
+#include "system_task.h"
 
 #include "FreeRTOS.h"
 #include "task.h"
@@ -52,10 +53,15 @@ static StaticTask_t usbTaskTcb;
 static StackType_t  usbTaskStack[USB_TASK_STACK_SIZE];
 #endif
 
+/* System task */
+static StaticTask_t       systemTaskTcb;
+static StackType_t        systemTaskStack[SYSTEM_TASK_STACK_SIZE];
+
 void system_app_init(void)
 {
     /* Always called — no-op in non-DYNAMIC builds (guard is inside the function) */
     modbus_port_ownership_init();
+
 
 #if COMMS_MODBUS_PORT != COMMS_MODBUS_USB
     modbusUartTaskHandle = xTaskCreateStatic(
@@ -74,10 +80,19 @@ void system_app_init(void)
         "usb_task",
         DEFAULT_TASK_STACK_SIZE,
         NULL,
-        DEFAULT_TASK_PRIORITY,
+        USB_TASK_PRIORITY,
         usbTaskStack,
         &usbTaskTcb);
 #endif
+
+    xTaskCreateStatic(
+        system_task,
+        "system_task",
+        SYSTEM_TASK_STACK_SIZE,
+        NULL,
+        SYSTEM_TASK_PRIORITY,
+        systemTaskStack,
+        &systemTaskTcb);
 }
 
 void vApplicationGetIdleTaskMemory(StaticTask_t **ppxIdleTaskTCBBuffer,
