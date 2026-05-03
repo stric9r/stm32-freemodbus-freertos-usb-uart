@@ -7,9 +7,11 @@
 #include "main.h"
 #include "portserial.h"
 
-
 #if COMMS_MODBUS_PORT != COMMS_MODBUS_UART
 #include "modbus_usb.h"
+#else
+#include "main.h"
+#include "system_task.h"
 #endif
 
 /**
@@ -33,10 +35,10 @@ void usb_task(void * argument)
     for (;;)
     {
         #if COMMS_MODBUS_PORT != COMMS_MODBUS_UART
-        (void)modbus_usb_run();   /* sleeps until USB data arrives */
+        (void)modbus_usb_run();
         #else
-        // Just sleep nothing to do, nothing implemented
-        vtaskDelay(pdMS_TO_TICKS(15000));
+        vTaskDelay(pdMS_TO_TICKS(SYSTEM_CHECK_IN_TIME_MS));
+        system_task_check_in(SYSTEM_TASK_ID_USB);
         #endif
     }
 }

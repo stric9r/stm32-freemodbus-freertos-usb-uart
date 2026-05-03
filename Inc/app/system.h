@@ -8,13 +8,18 @@ extern "C" {
 /* Task stack sizes — in words (1 word = 4 bytes on Cortex-M) */
 #define BASE_STACK_SIZE           512u
 #define DEFAULT_TASK_STACK_SIZE   (BASE_STACK_SIZE)
-#define MODBUS_TASK_STACK_SIZE    (BASE_STACK_SIZE)  /* 100 is arbitrary right now - depends on your task */
+#define MODBUS_TASK_STACK_SIZE    (BASE_STACK_SIZE)       /* Arbitrary right now - depends on your task */
+#define SYSTEM_TASK_STACK_SIZE    (BASE_STACK_SIZE)
 #define USB_TASK_STACK_SIZE       (BASE_STACK_SIZE * 2u)  /* USB middleware needs ~1.5-2KB headroom */
+
 
 /* Task priorities */
 #define TASK_IDLE_PRIORITY        (0) /* Just for reference*/
+
 #define DEFAULT_TASK_PRIORITY     (4) /* Arbitrarily chosen */
 #define MODBUS_TASK_PRIORITY      (5)
+#define SYSTEM_TASK_PRIORITY      (3) /* Below app tasks so they run before the watchdog is petted */
+#define USB_TASK_PRIORITY         (4) /* Arbitrarily chosen */
 
 
 void system_app_init(void);
