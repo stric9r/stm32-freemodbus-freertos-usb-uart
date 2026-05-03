@@ -1,7 +1,7 @@
 #include "mb.h"
 #include "mbport.h"
 
-#include "watchdog.h"
+#include "main.h"
 
 #include "FreeRTOS.h"
 #include "queue.h"
@@ -71,13 +71,14 @@ BOOL xMBPortEventPost(eMBEventType eEvent)
  *
  * Called by eMBPoll() on every iteration. Blocks for up to
  * WD_CHECK_IN_TIME_MS so the Modbus task yields the CPU when there is
- * nothing to process, but wakes up periodically to pet the watchdog.
+ * nothing to process, but wakes up periodically to check in with system
+ * so it can pet the watchdog.
  *
  * @return TRUE if an event was received, FALSE if the receive timed out.
  */
 BOOL xMBPortEventGet(eMBEventType *eEvent)
 {
     return (pdTRUE == xQueueReceive(eventQueue, eEvent,
-                                    pdMS_TO_TICKS(WD_CHECK_IN_TIME_MS)))
+                                    pdMS_TO_TICKS(SYSTEM_CHECK_IN_TIME_MS)))
            ? TRUE : FALSE;
 }

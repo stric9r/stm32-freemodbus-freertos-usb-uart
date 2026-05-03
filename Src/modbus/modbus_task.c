@@ -54,8 +54,6 @@ void modbus_task(void * pvParameters)
 {
     (void)pvParameters;
 
-    system_task_register(SYSTEM_TASK_ID_MODBUS);
-
     mb_mem_init();
 
     // todo [2026-04-18] Check if flash has a setting saved for slave address / baud

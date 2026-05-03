@@ -9,11 +9,9 @@
  */
 
 #include "system_task.h"
-#include "system.h"
 #include "watchdog.h"
 
 #include "FreeRTOS.h"
-#include "task.h"
 #include "event_groups.h"
 
 static EventGroupHandle_t checkinGroup;
@@ -27,8 +25,6 @@ static EventBits_t        requiredBits;
 void system_task(void *arg)
 {
     (void)arg;
-
-    checkinGroup = xEventGroupCreateStatic(&checkinGroupBuffer);
 
     for (;;)
     {
@@ -48,12 +44,18 @@ void system_task(void *arg)
 
 /**
  * @brief Register a task as required to check in each watchdog cycle.
- *        Must be called after system_task_init() and before the scheduler starts.
+ *        Must be called before the scheduler starts to avoid concurrent access.
+ *        Creates the event group on the first call.
  *
  * @param id  The task's SystemTaskId_t.
  */
 void system_task_register(SystemTaskId_t id)
 {
+    if (NULL == checkinGroup)
+    {
+        checkinGroup = xEventGroupCreateStatic(&checkinGroupBuffer);
+    }
+    
     requiredBits |= (EventBits_t)(1u << id);
 }
 

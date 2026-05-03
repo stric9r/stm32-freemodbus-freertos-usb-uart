@@ -63,7 +63,7 @@ int main(void)
   // We should never get here as control is now taken by the scheduler 
 
   // Infinite loop 
-  while (1)
+  for(;;)
   {
     bool const bSchedulerFallThrough = false;
     assert(bSchedulerFallThrough);
@@ -153,7 +153,7 @@ void Error_Handler(void)
   /* USER CODE BEGIN Error_Handler_Debug */
   /* User can add his own implementation to report the HAL error return state */
   __disable_irq();
-  while (1)
+  for(;;)
   {
   }
   /* USER CODE END Error_Handler_Debug */

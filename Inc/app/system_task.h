@@ -7,6 +7,7 @@ extern "C" {
 
 typedef enum {
     SYSTEM_TASK_ID_MODBUS = 0,
+    // Not used right now, USB with modbus is indirectly petting the watchdog
     SYSTEM_TASK_ID_USB    = 1,
 } SystemTaskId_t;
 

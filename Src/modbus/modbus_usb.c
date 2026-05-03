@@ -102,8 +102,8 @@ void modbus_usb_init(void)
  *
  * @return MB_ENOERR   Frame injected, or silently discarded (not owner /
  *                     pre-validation failed).
- * @return MB_ETIMEDOUT No data arrived within the check-in window; caller should
- *                     check in with system_task and loop.
+ * @return MB_ETIMEDOUT Should not occur with portMAX_DELAY; defensive return
+ *                     for the initial stream buffer receive.
  */
 eMBErrorCode modbus_usb_run(void)
 {
@@ -113,9 +113,8 @@ eMBErrorCode modbus_usb_run(void)
     eMBErrorCode errorCode   = MB_ENOERR;
     bool         bContinue   = true;
 
-    /* Task sleeps here until CDC_Receive_FS ISR delivers the first byte,
-     * or until the check-in window elapses so the caller can pet the watchdog */
-    if (0u == xStreamBufferReceive(usbRxStream, &byte, 1u, pdMS_TO_TICKS(15000u)))
+    /* Task sleeps here until CDC_Receive_FS ISR delivers the first byte */
+    if (0u == xStreamBufferReceive(usbRxStream, &byte, 1u, portMAX_DELAY))
     {
         bContinue  = false;
         errorCode  = MB_ETIMEDOUT;

@@ -29,6 +29,10 @@ extern "C" {
 
 // @todo [2026-4-12] Rename main.h to common.h or something similar
 
+// Common area for the System check in time so 
+// tasks can check in for watchdog to get pet
+#define SYSTEM_CHECK_IN_TIME_MS 15000u
+
 void Error_Handler(void);
 void SystemClock_Config(void);
 
