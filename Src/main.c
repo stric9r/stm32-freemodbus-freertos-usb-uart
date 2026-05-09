@@ -23,6 +23,7 @@
 #include "system.h"
 
 #include "dma.h"
+#include "flash.h"
 #include "gpio.h"
 #include "icache.h"
 #include "lptim.h"
@@ -55,7 +56,8 @@ int main(void)
   //dma_init();
 
   icache_init();
-  
+  flash_init();
+
   // Modbus lib will init lptimer and usart
  
 

@@ -35,8 +35,6 @@ typedef struct {
 } modbus_cfg_t;
 
 void             mb_mem_init(void);
-bool             mb_mem_get_mutex(void);
-void             mb_mem_release_mutex(void);
 uint16_t const * mb_mem_get_holding(uint16_t const addr);
 bool             mb_mem_set_holding(uint16_t const addr,
                                     uint16_t const * const p_data,

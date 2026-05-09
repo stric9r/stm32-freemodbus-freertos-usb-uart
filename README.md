@@ -118,7 +118,7 @@ modbus_task / eMBPoll() wakes (same path as UART)
 
 ### Shared Register Memory
 
-Both transports share a single register bank owned by `modbus_mem.c`.  A FreeRTOS mutex protects the bank.  All access goes through `mb_mem_get_mutex()` / `mb_mem_release_mutex()` — the mutex is never exported directly.
+Both transports share a single register bank owned by `modbus_mem.c`.  A FreeRTOS mutex protects items stored in flash internally.  Everything else is in RAM without protection.
 
 | Register bank | Start address | Count | Notes |
 |---------------|--------------|-------|-------|
@@ -128,6 +128,22 @@ Both transports share a single register bank owned by `modbus_mem.c`.  A FreeRTO
 | Discrete | — | — | Not implemented |
 
 Addresses and counts are set in `Inc/modbus/port_addresses.h`.
+
+Both the holding and input banks are initialised at boot from the active flash config (or compile-time defaults if flash is erased). They share the same register layout:
+
+| Offset | Modbus address | Name | Content |
+|--------|---------------|------|---------|
+| 0 | 1 | `SLAVE_ADDR` | Slave address (1–247) |
+| 1 | 2 | `MODE` | `eMBMode`: 0 = RTU, 1 = ASCII |
+| 2 | 3 | `BAUD_RATE_LO` | Baud rate bits [15:0] |
+| 3 | 4 | `BAUD_RATE_HI` | Baud rate bits [31:16] |
+| 4 | 5 | `PARITY` | `eMBParity`: 0 = none, 1 = odd, 2 = even |
+| 5 | 6 | `DATA_BITS` | Data bits (informational — fixed at 8 internally) |
+| 6 | 7 | `STOP_BITS` | Stop bits |
+| 7 | 8 | `CRC` | CRC-16/Modbus of the stored flash config |
+| 8 | 9 | `WRITE_FLAG` | Write trigger: set any non-zero value to persist registers 1–8 to `FLASH_MB` and reboot |
+
+Writing holding registers 1–8 followed by a non-zero write to register 9 (`WRITE_FLAG`) persists the new configuration to flash and issues `NVIC_SystemReset()`. The device reboots using the new values.
 
 ### Flash Layout
 
@@ -192,10 +208,10 @@ When true, the three FreeModbus I/O functions behave as follows:
 
 ### Communications
 
-- **UART** — USART2, 115200 baud 8N1.  Configurable via Modbus registers (future).
+- **UART** — USART2, 115200 baud 8N1.  Configurable via Modbus registers.
 - **USB CDC** — virtual COM port via STM32L5 USB FS.  Baud rate setting ignored (USB ignores line coding for data routing).  Connect with any terminal: `screen /dev/ttyACM0 115200` on Linux, any COMxx port on Windows.
 
-Both ports speak Modbus RTU.  In DYNAMIC mode the first master to send a frame claims the bus for 5 seconds of inactivity.
+Both ports speak Modbus RTU.  In DYNAMIC mode the first task to send a frame claims the bus for 5 seconds of inactivity.
 
 ### Supported Modbus Function Codes
 
@@ -349,7 +365,7 @@ The `.project` and `.cproject` files are committed.  Select the **Debug** build 
 ## Known Limitations / TODOs
 
 - Coil and discrete input registers not implemented (return exception 01).
-- UART configuration (baud rate, parity, slave address) persisted to `FLASH_MB` via `modbus_cfg_t`, but not yet Modbus-configurable at runtime — a master cannot change them by writing holding registers.
+- Modbus configuration (slave address, baud rate, parity, stop bits) is runtime-configurable by writing holding registers 1–8 and triggering a flash write via register 9 (`WRITE_FLAG`). The device reboots automatically to apply the new config.
 - General holding register values not persisted to flash across power cycles.
 - No DMA on USART2 — each byte goes through an ISR.  FreeModbus's byte-at-a-time model makes DMA integration non-trivial.
 - CRC computation for the response in the USB path requires a second read of the register bank to calculate the CRC separately from the TX data accumulation path (this is handled by FreeModbus itself and is not a concern for normal operation).

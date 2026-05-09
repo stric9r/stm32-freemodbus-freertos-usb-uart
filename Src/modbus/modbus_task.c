@@ -83,11 +83,6 @@ eMBErrorCode eMBRegInputCB(UCHAR * pRegBuffer, USHORT address, USHORT nRegs)
         return MB_ENOREG;
     }
 
-    if (!mb_mem_get_mutex())
-    {
-        return MB_ENOREG;
-    }
-
     for (USHORT i = 0u; i < nRegs; i++)
     {
         uint16_t const * pReg = mb_mem_get_input((uint16_t)(address + i));
@@ -96,7 +91,6 @@ eMBErrorCode eMBRegInputCB(UCHAR * pRegBuffer, USHORT address, USHORT nRegs)
         *pRegBuffer++ = (UCHAR)(val & 0xFFu);
     }
 
-    mb_mem_release_mutex();
     return MB_ENOERR;
 }
 
@@ -122,11 +116,6 @@ eMBRegHoldingCB(UCHAR * pRegBuffer, USHORT address, USHORT nRegs,
 {
     if ((address < (USHORT)REG_HOLDING_START) ||
         ((USHORT)(address + nRegs) > (USHORT)(REG_HOLDING_START + REG_HOLDING_NREGS)))
-    {
-        return MB_ENOREG;
-    }
-
-    if (!mb_mem_get_mutex())
     {
         return MB_ENOREG;
     }
@@ -165,8 +154,7 @@ eMBRegHoldingCB(UCHAR * pRegBuffer, USHORT address, USHORT nRegs,
     default:
         break;
     }
-
-    mb_mem_release_mutex();
+    
     return eStatus;
 }
 
