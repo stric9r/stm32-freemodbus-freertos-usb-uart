@@ -1,4 +1,3 @@
-/* USER CODE BEGIN Header */
 /**
   ******************************************************************************
   * @file    crc.h
@@ -16,7 +15,6 @@
   *
   ******************************************************************************
   */
-/* USER CODE END Header */
 /*
  * Modified by Stric Roberts, 2026.
  * MIT License — see LICENSE in the project root.
@@ -32,22 +30,16 @@ extern "C" {
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 
-/* USER CODE BEGIN Includes */
 
-/* USER CODE END Includes */
 
 /** Returns a pointer to the CRC handle owned by crc.c. */
 CRC_HandleTypeDef * CRC_GetHandle(void);
 
-/* USER CODE BEGIN Private defines */
 
-/* USER CODE END Private defines */
 
 void MX_CRC_Init(void);
 
-/* USER CODE BEGIN Prototypes */
 
-/* USER CODE END Prototypes */
 
 #ifdef __cplusplus
 }

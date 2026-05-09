@@ -1,4 +1,3 @@
-/* USER CODE BEGIN Header */
 /**
   ******************************************************************************
   * @file    stm32l5xx_hal_conf.h
@@ -16,7 +15,6 @@
   *
   ******************************************************************************
   */
-/* USER CODE END Header */
 /*
  * Modified by Stric Roberts, 2026.
  * MIT License — see LICENSE in the project root.
