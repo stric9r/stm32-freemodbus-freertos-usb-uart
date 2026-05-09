@@ -1,6 +1,10 @@
 #ifndef _PORT_INTERNAL_H
 #define _PORT_INTERNAL_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "stm32l5xx_hal.h"
 #include "gpio.h"
 #include "lptim.h"
@@ -159,5 +163,9 @@ static inline void vMBTimerDebugSetLow( void )
 #define vMBTimerDebugSetLow()
 #endif
 
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // _PORT_INTERNAL_H

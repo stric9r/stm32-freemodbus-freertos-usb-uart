@@ -1,6 +1,10 @@
 #ifndef PORT_ADDRESSES_H
 #define PORT_ADDRESSES_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* Modbus slave address — arbitrarily selected; set for product X */
 #define DEFAULT_SLAVE_ADDR  0x0Au
 
@@ -21,5 +25,9 @@
 // @todo [2026-04-25] Not implemented — eMBRegDiscreteCB returns MB_ENOREG
 #define REG_DISCRETE_START  0u
 #define REG_DISCRETE_NREGS  0u
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* PORT_ADDRESSES_H */
