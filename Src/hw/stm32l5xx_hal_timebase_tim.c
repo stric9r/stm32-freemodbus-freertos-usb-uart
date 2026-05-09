@@ -115,3 +115,8 @@ void HAL_ResumeTick(void)
   __HAL_TIM_ENABLE_IT(&htim6, TIM_IT_UPDATE);
 }
 
+void TIM6_IRQHandler(void)
+{
+  HAL_TIM_IRQHandler(&htim6);
+}
+

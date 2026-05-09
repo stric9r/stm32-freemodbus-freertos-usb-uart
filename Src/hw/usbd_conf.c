@@ -679,3 +679,8 @@ USBD_StatusTypeDef USBD_Get_USB_Status(HAL_StatusTypeDef hal_status)
   }
   return usb_status;
 }
+
+void USB_FS_IRQHandler(void)
+{
+  HAL_PCD_IRQHandler(&hpcd_USB_FS);
+}

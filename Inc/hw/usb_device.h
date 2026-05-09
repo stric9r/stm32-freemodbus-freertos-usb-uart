@@ -30,6 +30,9 @@
 /** USB Device initialization function. */
 void MX_USB_Device_Init(void);
 
+/** Returns a pointer to the USB device handle owned by usb_device.c. */
+USBD_HandleTypeDef * USB_GetDeviceHandle(void);
+
 #ifdef __cplusplus
 }
 #endif

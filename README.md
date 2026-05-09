@@ -313,6 +313,45 @@ The `.project` and `.cproject` files are committed.  Select the **Debug** build 
 
 ---
 
+## Design Decisions
+
+### `extern` Usage Policy
+
+#### The Rule
+
+No raw `extern` declarations inside `.c` files. All cross-module variable sharing must go through a header. For HAL peripheral handles, the preferred pattern is a getter function rather than a raw `extern` variable.
+
+#### Why Getters Over Raw `extern` — and Why It Matters More on an RTOS
+
+On bare-metal, execution order is linear and deterministic. On FreeRTOS, the scheduler decides which task runs when. A raw `extern` handle shared across modules carries no information about ownership, initialization order, or which execution contexts are allowed to touch it. If two tasks both reference `extern USBD_HandleTypeDef hUsbDeviceFS` there is nothing at the call site that signals which task holds a lock or whether the handle is initialized yet.
+
+A getter function (`USB_GetDeviceHandle()`) does not solve thread-safety on its own, but it:
+- Gives you a single intercept point if you later need to add an assertion or a mutex check.
+- Makes ownership explicit: the `.c` file that defines the handle and provides the getter is unambiguously the owner.
+- Removes the handle type from the public interface of any module that does not need to know about it.
+
+In this project the thread-safety risk is low — USB handle access is dominated by ISR context, and Modbus-level access is serialized by a mutex in `modbus_port_ownership.c`. The getters are policy, not a runtime fix.
+
+#### Why Some Handles Live Entirely in Their Own File
+
+For `hpcd_USB_FS` (`Src/hw/usbd_conf.c`) and `htim6` (`Src/hw/stm32l5xx_hal_timebase_tim.c`), the ISR handlers were moved into the same file that defines the handle. The handle never leaves its translation unit — no `extern` of any kind is needed.
+
+#### Intentionally Left as `extern` (in Headers)
+
+| Symbol | File | Reason |
+|--------|------|--------|
+| `USBD_Interface_fops_FS`, `CDC_Desc` | `Inc/hw/usbd_cdc_if.h`, `Inc/hw/usbd_desc.h` | Initialization-time constants passed once to middleware at startup. No mutation, no concurrent access, no encapsulation benefit from a getter. |
+| `usbRxStream` | `Inc/modbus/portserial_usb.h` | FreeRTOS stream buffer written directly from an ISR (`CDC_Receive_FS`). A wrapper function would add indirection in ISR context with no benefit. Declared in a header (not a `.c` file), so CLAUDE.md is satisfied. |
+| `SystemCoreClock` | `Inc/app/FreeRTOSConfig.h` | Defined by CMSIS/STM32 startup code. No application source file owns it; there is nothing to wrap. |
+| Linker symbols (`_end`, `_estack`, `_Min_Stack_Size`) | `Src/sysmem.c` | Defined by the linker script. Only expressible as `extern`; no source file allocates them. |
+| Weak stubs (`__io_putchar`, `__io_getchar`) | `Src/syscalls.c` | Newlib weak-symbol pattern. No source to wrap. |
+
+#### What Was Not Changed
+
+`Drivers/` (HAL + CMSIS) and `Middlewares/` (FreeRTOS, FreeModbus, USB Device Library) are vendor/third-party code and are never modified. The STM32 USB Device Library's callback interface (`USBD_CDC_ItfTypeDef`) requires the CDC layer (`usbd_cdc_if.c`) to hold a reference to the device handle in order to re-arm the RX endpoint after each receive — fully hiding `hUsbDeviceFS` from `usbd_cdc_if.c` would require changing that middleware interface. The getter (`USB_GetDeviceHandle()`) is the practical ceiling without touching vendor code.
+
+---
+
 ## Complaints
 
 STM32CubeMX is convenient for project scaffolding but its generated code structure conflicts with maintainability goals:

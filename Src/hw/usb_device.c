@@ -28,7 +28,6 @@
 
 /* USB Device Core handle declaration. */
 USBD_HandleTypeDef hUsbDeviceFS;
-extern USBD_DescriptorsTypeDef CDC_Desc;
 
 
 /**
@@ -42,5 +41,14 @@ void MX_USB_Device_Init(void)
   assert(USBD_OK == USBD_RegisterClass(&hUsbDeviceFS, &USBD_CDC));
   assert(USBD_OK == USBD_CDC_RegisterInterface(&hUsbDeviceFS, &USBD_Interface_fops_FS));
   assert(USBD_OK == USBD_Start(&hUsbDeviceFS));
+}
+
+/**
+ * @brief  Returns a pointer to the USB device handle owned by this module.
+ * @retval Pointer to the USBD_HandleTypeDef instance.
+ */
+USBD_HandleTypeDef * USB_GetDeviceHandle(void)
+{
+    return &hUsbDeviceFS;
 }
 

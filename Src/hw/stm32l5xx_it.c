@@ -18,15 +18,8 @@
 #include "main.h"
 #include "stm32l5xx_it.h"
 
-extern PCD_HandleTypeDef hpcd_USB_FS;
-
 // @todo [2026-04-26] Use DMA or remove it
 //extern DMA_HandleTypeDef hdma_usart2_tx;
-
-// Not using here, modbus handles it directly outside of FreeRTOS and CubeMX
-//extern UART_HandleTypeDef huart2;
-
-extern TIM_HandleTypeDef htim6;
 
 /******************************************************************************/
 /*           Cortex Processor Interruption and Exception Handlers          */
@@ -49,14 +42,6 @@ void DMA1_Channel3_IRQHandler(void)
 }
 
 /**
-  * @brief This function handles TIM6 global interrupt.
-  */
-void TIM6_IRQHandler(void)
-{
-  HAL_TIM_IRQHandler(&htim6);
-}
-
-/**
   * @brief This function handles USART2 global interrupt / USART2 wake-up interrupt through EXTI line 27.
   */
  /* Not using here, modbus handles it directly outside of FreeRTOS and CubeMX
@@ -64,11 +49,3 @@ void USART2_IRQHandler(void)
 {
   HAL_UART_IRQHandler(&huart2);
 }*/
-
-/**
-  * @brief This function handles USB FS global interrupt / USB FS wake-up interrupt through EXTI line 34.
-  */
-void USB_FS_IRQHandler(void)
-{
-  HAL_PCD_IRQHandler(&hpcd_USB_FS);
-}

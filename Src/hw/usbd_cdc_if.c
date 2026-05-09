@@ -17,6 +17,7 @@
   */
 
 #include "usbd_cdc_if.h"
+#include "usb_device.h"
 
 /* portserial_usb.h provides two things used in this file:
  *   1. extern StreamBufferHandle_t usbRxStream — the FreeRTOS stream buffer
@@ -34,8 +35,6 @@
 uint8_t UserRxBufferFS[APP_RX_DATA_SIZE];
 /** Data to send over USB CDC are stored in this buffer   */
 uint8_t UserTxBufferFS[APP_TX_DATA_SIZE];
-
-extern USBD_HandleTypeDef hUsbDeviceFS;
 
 /** USBD_CDC_IF_Private_FunctionPrototypes USBD_CDC_IF_Private_FunctionPrototypes */
 static int8_t CDC_Init_FS(void);
@@ -62,8 +61,8 @@ USBD_CDC_ItfTypeDef USBD_Interface_fops_FS =
 static int8_t CDC_Init_FS(void)
 {
   /* Set Application Buffers */
-  USBD_CDC_SetTxBuffer(&hUsbDeviceFS, UserTxBufferFS, 0);
-  USBD_CDC_SetRxBuffer(&hUsbDeviceFS, UserRxBufferFS);
+  USBD_CDC_SetTxBuffer(USB_GetDeviceHandle(), UserTxBufferFS, 0);
+  USBD_CDC_SetRxBuffer(USB_GetDeviceHandle(), UserRxBufferFS);
   return (USBD_OK);
 }
 
@@ -171,8 +170,8 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
 {
   BaseType_t xHigherPriorityTaskWoken = pdFALSE;
   xStreamBufferSendFromISR(usbRxStream, Buf, *Len, &xHigherPriorityTaskWoken);
-  USBD_CDC_SetRxBuffer(&hUsbDeviceFS, UserRxBufferFS);
-  USBD_CDC_ReceivePacket(&hUsbDeviceFS);
+  USBD_CDC_SetRxBuffer(USB_GetDeviceHandle(), UserRxBufferFS);
+  USBD_CDC_ReceivePacket(USB_GetDeviceHandle());
   portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
   return (USBD_OK);
 }
@@ -190,7 +189,7 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
   */
 uint8_t CDC_Transmit_FS(uint8_t* Buf, uint16_t Len)
 {
-  USBD_CDC_HandleTypeDef * hcdc = (USBD_CDC_HandleTypeDef*)hUsbDeviceFS.pClassData;
+  USBD_CDC_HandleTypeDef * hcdc = (USBD_CDC_HandleTypeDef*)USB_GetDeviceHandle()->pClassData;
   uint8_t result;
 
   if (hcdc->TxState != 0)
@@ -199,8 +198,8 @@ uint8_t CDC_Transmit_FS(uint8_t* Buf, uint16_t Len)
   }
   else
   {
-    USBD_CDC_SetTxBuffer(&hUsbDeviceFS, Buf, Len);
-    result = USBD_CDC_TransmitPacket(&hUsbDeviceFS);
+    USBD_CDC_SetTxBuffer(USB_GetDeviceHandle(), Buf, Len);
+    result = USBD_CDC_TransmitPacket(USB_GetDeviceHandle());
   }
 
   return result;

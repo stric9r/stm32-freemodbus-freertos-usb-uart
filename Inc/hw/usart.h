@@ -30,8 +30,8 @@ extern "C" {
 
 #include <stdbool.h>
 
-// @todo [2026-4-12] Decouple how the handle is passed around.  It's ugly.
-extern UART_HandleTypeDef huart2;
+/** Returns a pointer to the USART2 handle owned by usart.c. */
+UART_HandleTypeDef * USART2_GetHandle(void);
 
 
 void usart_uart_init(uint8_t  const usartNum,
