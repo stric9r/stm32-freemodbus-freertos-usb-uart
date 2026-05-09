@@ -1,3 +1,11 @@
+/**
+  ******************************************************************************
+  * @file           : modbus_usb.h
+  * @brief          : USB Modbus adapter entry points
+  ******************************************************************************
+  * Stric Roberts, 2026. MIT License — see LICENSE in the project root.
+  ******************************************************************************
+  */
 #ifndef MODBUS_USB_H
 #define MODBUS_USB_H
 

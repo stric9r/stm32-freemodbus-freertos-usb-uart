@@ -1,5 +1,10 @@
 /**
   ******************************************************************************
+  * Stric Roberts, 2026. MIT License — see LICENSE in the project root.
+  ******************************************************************************
+  */
+/**
+  ******************************************************************************
   * @file    usart_common.h
   * @brief   This file contains common function prototypes to
   *          alleviate coupling

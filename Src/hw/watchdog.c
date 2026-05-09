@@ -1,4 +1,9 @@
 /**
+  ******************************************************************************
+  * Stric Roberts, 2026. MIT License — see LICENSE in the project root.
+  ******************************************************************************
+  */
+/**
  * @file watchdog.c
  * @brief IWDG (Independent Watchdog) driver for STM32L5.
  *

@@ -15,6 +15,10 @@
   *
   ******************************************************************************
   */
+/*
+ * Modified by Stric Roberts, 2026.
+ * MIT License — see LICENSE in the project root.
+ */
 #ifndef __USB_DEVICE__H__
 #define __USB_DEVICE__H__
 

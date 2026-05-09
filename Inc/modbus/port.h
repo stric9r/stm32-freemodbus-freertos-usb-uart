@@ -1,3 +1,11 @@
+/**
+  ******************************************************************************
+  * @file           : port.h
+  * @brief          : FreeModbus port type aliases and critical-section macros
+  ******************************************************************************
+  * Stric Roberts, 2026. MIT License — see LICENSE in the project root.
+  ******************************************************************************
+  */
 #ifndef _PORT_H
 #define _PORT_H
 

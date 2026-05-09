@@ -16,6 +16,10 @@
   ******************************************************************************
   */
 /* USER CODE END Header */
+/*
+ * Modified by Stric Roberts, 2026.
+ * MIT License — see LICENSE in the project root.
+ */
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32l5xx_hal.h"

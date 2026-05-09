@@ -1,3 +1,11 @@
+/**
+  ******************************************************************************
+  * @file           : port_addresses.h
+  * @brief          : Modbus register addresses, counts, and slave address
+  ******************************************************************************
+  * Stric Roberts, 2026. MIT License — see LICENSE in the project root.
+  ******************************************************************************
+  */
 #ifndef PORT_ADDRESSES_H
 #define PORT_ADDRESSES_H
 

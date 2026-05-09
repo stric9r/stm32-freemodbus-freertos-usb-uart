@@ -1,3 +1,11 @@
+/**
+  ******************************************************************************
+  * @file           : modbus_port_ownership.h
+  * @brief          : Modbus bus ownership arbitration API
+  ******************************************************************************
+  * Stric Roberts, 2026. MIT License — see LICENSE in the project root.
+  ******************************************************************************
+  */
 #ifndef MODBUS_PORT_OWNERSHIP_H
 #define MODBUS_PORT_OWNERSHIP_H
 

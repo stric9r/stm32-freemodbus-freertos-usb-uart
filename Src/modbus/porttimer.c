@@ -1,3 +1,11 @@
+/**
+  ******************************************************************************
+  * @file           : porttimer.c
+  * @brief          : FreeModbus port: LPTIM1 one-shot timer for t3.5 inter-frame silence
+  ******************************************************************************
+  * Stric Roberts, 2026. MIT License — see LICENSE in the project root.
+  ******************************************************************************
+  */
 #include "mb.h"
 #include "mbport.h"
 #include "port_internal.h"

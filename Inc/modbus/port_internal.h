@@ -1,3 +1,11 @@
+/**
+  ******************************************************************************
+  * @file           : port_internal.h
+  * @brief          : Hardware binding macros for USART2 and LPTIM1
+  ******************************************************************************
+  * Stric Roberts, 2026. MIT License — see LICENSE in the project root.
+  ******************************************************************************
+  */
 #ifndef _PORT_INTERNAL_H
 #define _PORT_INTERNAL_H
 

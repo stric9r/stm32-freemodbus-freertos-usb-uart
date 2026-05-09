@@ -1,4 +1,9 @@
 /**
+  ******************************************************************************
+  * Stric Roberts, 2026. MIT License — see LICENSE in the project root.
+  ******************************************************************************
+  */
+/**
  * @file watchdog.h
  * @brief Public interface for the IWDG hardware watchdog driver.
  *

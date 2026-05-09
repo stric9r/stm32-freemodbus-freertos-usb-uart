@@ -1,4 +1,9 @@
 /**
+  ******************************************************************************
+  * Stric Roberts, 2026. MIT License — see LICENSE in the project root.
+  ******************************************************************************
+  */
+/**
  * @file system_task.c
  * @brief Centralised watchdog health task.
  *

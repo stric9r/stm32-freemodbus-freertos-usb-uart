@@ -1,3 +1,11 @@
+/**
+  ******************************************************************************
+  * @file           : modbus_task.h
+  * @brief          : Modbus RTU task entry point declaration
+  ******************************************************************************
+  * Stric Roberts, 2026. MIT License — see LICENSE in the project root.
+  ******************************************************************************
+  */
 #ifndef MODBUS_TASK_H
 #define MODBUS_TASK_H
 

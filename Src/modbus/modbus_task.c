@@ -1,4 +1,9 @@
 /**
+  ******************************************************************************
+  * Stric Roberts, 2026. MIT License — see LICENSE in the project root.
+  ******************************************************************************
+  */
+/**
  * @file modbus_task.c
  * @brief FreeRTOS task and freemodbus register callbacks for Modbus RTU slave.
  *
