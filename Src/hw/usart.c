@@ -20,6 +20,11 @@
 UART_HandleTypeDef huart2;
 static UART_HandleTypeDef * const pHandle = &huart2;
 
+UART_HandleTypeDef * USART2_GetHandle(void)
+{
+    return &huart2;
+}
+
 // @todo [2026-4-12] Can we utilize DMA here?  Freemodbus may need modification.
 DMA_HandleTypeDef hdma_usart2_tx;
 

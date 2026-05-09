@@ -32,7 +32,8 @@ extern "C" {
 
 /* USER CODE END Includes */
 
-extern CRC_HandleTypeDef hcrc;
+/** Returns a pointer to the CRC handle owned by crc.c. */
+CRC_HandleTypeDef * CRC_GetHandle(void);
 
 /* USER CODE BEGIN Private defines */
 
