@@ -27,18 +27,36 @@
 
 #include "modbus_mem.h"
 #include "port_addresses.h"
+#include "mb.h"
+#include "mbcrc.h"
 
 #include "FreeRTOS.h"
 #include "semphr.h"
 
+#include "stm32l5xx_hal.h"
+
 #include <string.h>
 #include <assert.h>
+#include <stddef.h>
 
 static uint16_t regHoldingBuf[REG_HOLDING_NREGS];
 static uint16_t regInputBuf[REG_INPUT_NREGS];
 
 static StaticSemaphore_t mb_mem_mutex_buf;
 static SemaphoreHandle_t mb_mem_mutex;
+
+__attribute__((section(".nvm_mb")))
+modbus_cfg_t const nvmMbConfig;
+
+static modbus_cfg_t const defaultCfg = {
+    .slaveAddr = DEFAULT_SLAVE_ADDR,
+    .mode      = (uint8_t)DEFAULT_MODE,
+    .baudRate  = DEFAULT_BAUDERATE,
+    .parity    = (uint8_t)DEFAULT_PARITY,
+    .dataBits  = DEFAULT_DATA_BITS,
+    .stopBits  = DEFAULT_STOP_BITS,
+    .crc       = 0u,
+};
 
 /**
  * @brief Initialise the register memory space and create the access mutex.
@@ -181,3 +199,91 @@ uint16_t const * mb_mem_get_input(uint16_t const addr)
     return pData;
 }
 
+/**
+ * @brief Return the active Modbus port configuration.
+ *
+ * Validates the CRC-16/Modbus of the flash-resident @c nvmMbConfig. Returns a
+ * pointer to the flash struct when the CRC is valid, or a pointer to the
+ * compile-time @c defaultCfg when the flash is erased or corrupt. Never returns
+ * NULL — callers can use the result directly without a validity check.
+ */
+modbus_cfg_t const * mb_mem_get_config(void)
+{
+    USHORT const         computed   = usMBCRC16((UCHAR const *)&nvmMbConfig,
+                                                (USHORT)offsetof(modbus_cfg_t, crc));
+
+    modbus_cfg_t const * pResult  = 
+        (computed == nvmMbConfig.crc) ? &nvmMbConfig : &defaultCfg;
+
+    return pResult;
+}
+
+/**
+ * @brief Persist a new Modbus port configuration to FLASH_MB.
+ *
+ * Copies @p p_cfg into a staging buffer, computes the CRC-16/Modbus over all
+ * meaningful fields, erases flash page 252 (the first page of FLASH_MB), and
+ * writes the 16-byte struct as two doublewords. The write is verified by calling
+ * @c mb_mem_get_config() — if it returns @c &nvmMbConfig the write succeeded.
+ *
+ * @param p_cfg  Pointer to the config to persist (crc field is ignored; it is
+ *               computed here).
+ * @return true   Config written and verified successfully.
+ * @return false  A HAL flash operation failed, or post-write CRC check failed.
+ */
+bool mb_mem_set_config(modbus_cfg_t const * const p_cfg)
+{
+    assert(NULL != p_cfg);
+
+    modbus_cfg_t staging;
+    (void)memset(&staging, 0, sizeof(staging));
+    staging.slaveAddr = p_cfg->slaveAddr;
+    staging.mode      = p_cfg->mode;
+    staging.baudRate  = p_cfg->baudRate;
+    staging.parity    = p_cfg->parity;
+    staging.dataBits  = p_cfg->dataBits;
+    staging.stopBits  = p_cfg->stopBits;
+    staging.crc       = usMBCRC16((UCHAR const *)&staging,
+                                  (USHORT)offsetof(modbus_cfg_t, crc));
+
+
+    bool bContinue = (HAL_OK == HAL_FLASH_Unlock());
+
+
+    if (bContinue)
+    {
+        /* FLASH_MB is at 0x0807E000 — bank 2, page 124 (bank-relative).
+         * Bank 2 starts at 0x08040000; (0x0807E000-0x08040000)/0x800 = 124. */
+        FLASH_EraseInitTypeDef eraseInit = {
+            .TypeErase = FLASH_TYPEERASE_PAGES,
+            .Banks     = FLASH_BANK_2,
+            .Page      = 124u,
+            .NbPages   = 1u,
+        };
+        uint32_t pageError = 0u;
+
+        bContinue = (HAL_OK != HAL_FLASHEx_Erase(&eraseInit, &pageError));
+    }
+
+    if (bContinue)
+    {
+        uint64_t const * pWords = (uint64_t const *)&staging;
+        uint32_t const   addr   = (uint32_t)&nvmMbConfig;
+
+        bContinue = (HAL_OK == HAL_FLASH_Program(FLASH_TYPEPROGRAM_DOUBLEWORD, addr, pWords[0]));
+
+        if (bContinue)
+        {
+            bContinue = (HAL_OK == HAL_FLASH_Program(FLASH_TYPEPROGRAM_DOUBLEWORD, addr + 8u, pWords[1]);
+        }
+    }
+
+    (void)HAL_FLASH_Lock();
+
+    if (bContinue)
+    {
+        bContinue = (&nvmMbConfig == mb_mem_get_config());
+    }
+
+    return bContinue;
+}

@@ -29,22 +29,6 @@
 #include "FreeRTOS.h"
 #include "task.h"
 
-/* UART Modbus default configuration */
-#ifndef DEFAULT_MODE
-#define DEFAULT_MODE        MB_RTU
-#endif
-
-#ifndef DEFAULT_BAUDERATE
-#define DEFAULT_BAUDERATE   115200
-#endif
-
-#ifndef DEFAULT_PARITY
-#define DEFAULT_PARITY      MB_PAR_NONE
-#endif
-
-#ifndef DEFAULT_STOP_BITS
-#define DEFAULT_STOP_BITS   1u
-#endif
 /**
  * @brief FreeRTOS task entry point for the Modbus RTU slave.
  *
@@ -61,13 +45,13 @@ void modbus_task(void * pvParameters)
 
     mb_mem_init();
 
-    // todo [2026-04-18] Check if flash has a setting saved for slave address / baud
-    (void)eMBInit(DEFAULT_MODE,
-                  DEFAULT_SLAVE_ADDR,
+    modbus_cfg_t const * const pCfg = mb_mem_get_config();
+    (void)eMBInit((eMBMode)pCfg->mode,
+                  pCfg->slaveAddr,
                   0,                   /* port — not used by this BSP */
-                  DEFAULT_BAUDERATE,
-                  DEFAULT_PARITY,
-                  DEFAULT_STOP_BITS);
+                  pCfg->baudRate,
+                  (eMBParity)pCfg->parity,
+                  pCfg->stopBits);
 
     (void)eMBEnable();
 

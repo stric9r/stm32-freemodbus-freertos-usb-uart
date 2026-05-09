@@ -9,12 +9,36 @@
 #ifndef PORT_ADDRESSES_H
 #define PORT_ADDRESSES_H
 
+#include "mb.h"  /* eMBMode, eMBParity — needed for DEFAULT_MODE / DEFAULT_PARITY */
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/* Modbus slave address — arbitrarily selected; set for product X */
+/* Default Modbus port configuration — change these to remap compile-time defaults */
+#ifndef DEFAULT_SLAVE_ADDR
 #define DEFAULT_SLAVE_ADDR  0x0Au
+#endif
+
+#ifndef DEFAULT_MODE
+#define DEFAULT_MODE        MB_RTU
+#endif
+
+#ifndef DEFAULT_BAUDERATE
+#define DEFAULT_BAUDERATE   115200UL
+#endif
+
+#ifndef DEFAULT_PARITY
+#define DEFAULT_PARITY      MB_PAR_NONE
+#endif
+
+#ifndef DEFAULT_DATA_BITS
+#define DEFAULT_DATA_BITS   8u
+#endif
+
+#ifndef DEFAULT_STOP_BITS
+#define DEFAULT_STOP_BITS   1u
+#endif
 
 /* Holding registers — arbitrarily selected; set for product X */
 #define REG_HOLDING_START   1u

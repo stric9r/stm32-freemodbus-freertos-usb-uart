@@ -129,6 +129,49 @@ Both transports share a single register bank owned by `modbus_mem.c`.  A FreeRTO
 
 Addresses and counts are set in `Inc/modbus/port_addresses.h`.
 
+### Flash Layout
+
+The STM32L552ZET has 512 KB of internal flash (256 KB per bank, 2 KB pages).
+It is split into two named regions in `STM32L552ZETXQ_FLASH.ld`:
+
+| Region | Start | Size | Pages | Purpose |
+|--------|-------|------|-------|---------|
+| `FLASH_APP` | `0x08000000` | 504 KB | 0–251 | Application code, constants, and initialised-data load image |
+| `FLASH_MB` | `0x0807E000` | 8 KB | 252–255 | Modbus persistent configuration (`modbus_cfg_t`) |
+
+The application currently occupies approximately 76 KB of `FLASH_APP`, leaving ~428 KB
+of headroom before reaching the `FLASH_MB` boundary.
+
+#### Modbus Config — `FLASH_MB`
+
+`FLASH_MB` holds a single 16-byte `modbus_cfg_t` struct at page 252
+(bank 2, bank-relative page 124).  The struct is CRC-validated on every boot via
+`mb_mem_get_config()`:
+
+| Field | Size | Notes |
+|-------|------|-------|
+| `slaveAddr` | 1 byte | Modbus slave address (1–247) |
+| `mode` | 1 byte | `eMBMode` — MB_RTU or MB_ASCII |
+| `_pad[2]` | 2 bytes | Alignment padding |
+| `baudRate` | 4 bytes | Baud rate in bits/s |
+| `parity` | 1 byte | `eMBParity` — none / odd / even |
+| `dataBits` | 1 byte | Informational — FreeModbus RTU hardcodes 8 internally |
+| `stopBits` | 1 byte | Number of stop bits |
+| `_pad2` | 1 byte | Alignment padding |
+| `crc` | 2 bytes | CRC-16/Modbus over bytes 0–11 |
+| `_reserved[2]` | 2 bytes | Pad to 16 bytes for doubleword flash writes |
+
+If the CRC fails (erased flash, first boot, or corruption), `mb_mem_get_config()` returns
+a pointer to a compile-time default struct populated from the `DEFAULT_*` macros in
+`Inc/modbus/port_addresses.h`.  The task never sees a NULL pointer.
+
+To write a new config at runtime call `mb_mem_set_config()`, which erases page 252 and
+writes the struct as two 8-byte doublewords.
+
+To expand `FLASH_MB` for additional persistent data: add fields to `modbus_cfg_t`,
+increase `FLASH_MB LENGTH`, and decrease `FLASH_APP LENGTH` by the same amount, keeping
+both values multiples of 2 KB (one flash page).
+
 ### Port Layer Mux
 
 The FreeModbus port layer (`portserial.c`) contains a single `bUsbActive` flag.
@@ -306,8 +349,8 @@ The `.project` and `.cproject` files are committed.  Select the **Debug** build 
 ## Known Limitations / TODOs
 
 - Coil and discrete input registers not implemented (return exception 01).
-- UART configuration (baud rate, parity) not yet Modbus-configurable — hardcoded in `modbus_task.c`.
-- Holding register values not persisted to flash across power cycles.
+- UART configuration (baud rate, parity, slave address) persisted to `FLASH_MB` via `modbus_cfg_t`, but not yet Modbus-configurable at runtime — a master cannot change them by writing holding registers.
+- General holding register values not persisted to flash across power cycles.
 - No DMA on USART2 — each byte goes through an ISR.  FreeModbus's byte-at-a-time model makes DMA integration non-trivial.
 - CRC computation for the response in the USB path requires a second read of the register bank to calculate the CRC separately from the TX data accumulation path (this is handled by FreeModbus itself and is not a concern for normal operation).
 
