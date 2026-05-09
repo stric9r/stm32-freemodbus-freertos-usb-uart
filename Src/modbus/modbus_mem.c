@@ -58,6 +58,15 @@ static modbus_cfg_t const defaultCfg = {
     .crc       = 0u,
 };
 
+#define SLAVE_ADDR_IDX 0u
+#define MODE_IDX       1u
+#define BAUDE_RATE_IDX 2u
+#define PARITY_IDX     4u
+#define DATA_BITS_IDX  5u
+#define STOP_BITS_IDX  6u
+#define CRC_IDX        7u
+#define WRITE_FLAG_IDX 8u
+
 /**
  * @brief Initialise the register memory space and create the access mutex.
  *
@@ -70,15 +79,41 @@ void mb_mem_init(void)
     // @todo [2026-04-25] Read initial holding register values from flash on startup.
     // @todo [2026-04-25] Persist holding register writes to flash on change.
 
-    for (size_t idx = 0u; idx < REG_HOLDING_NREGS; idx++)
-    {
-        regHoldingBuf[idx] = (uint16_t)idx;
-    }
+    // We need atleast the default config size
+    assert(sizeof(modbus_cfg_t) =< (REG_HOLDING_NREGS*2u));
+    assert(sizeof(modbus_cfg_t) =< (REG_INPUT_NREGS*2u));
 
-    for (size_t idx = 0u; idx< REG_INPUT_NREGS; idx++)
-    {
-        regInputBuf[idx] = (uint16_t)idx;
-    }
+    memset(regHoldingBuf, 0u, (REG_HOLDING_NREGS*2u));
+    memset(regInputBuf,   0u, (REG_HOLDING_NREGS*2u));
+
+    // Get config values and populate
+    modbus_cfg_t const * const pCfg = mb_mem_get_config();
+
+    regHoldingBuf[SLAVE_ADDR_IDX]      = pCfg->slaveAddr;
+    regHoldingBuf[MODE_IDX]            = pCfg->mode;
+    // low bytes
+    regHoldingBuf[BAUDE_RATE_IDX]      = (uint16_t)(pCfg->baudRate & 0x00FF);
+    // high bytes
+    regHoldingBuf[BAUDE_RATE_IDX + 1u] = (uint16_t)((pCfg->baudRate & 0xFF00) >> 16u);
+    regHoldingBuf[PARITY_IDX]          = pCfg->parity;
+    regHoldingBuf[DATA_BITS_IDX]       = pCfg->dataBits;
+    regHoldingBuf[STOP_BITS_IDX]       = pCfg->stopBits;
+    regHoldingBuf[CRC_IDX]             = pCfg->crc;
+    // Write to flash flag
+    regHoldingBuf[WRITE_FLAG_IDX]      = 0;
+
+    regInputBuf[SLAVE_ADDR_IDX]        = pCfg->slaveAddr;
+    regInputBuf[MODE_IDX]              = pCfg->mode;
+    // low bytes
+    regInputBuf[BAUDE_RATE_IDX]        = (uint16_t)(pCfg->baudRate & 0x00FF);
+    // high bytes
+    regInputBuf[BAUDE_RATE_IDX + 1u]   = (uint16_t)((pCfg->baudRate & 0xFF00) >> 16u);
+    regInputBuf[PARITY_IDX]            = pCfg->parity;
+    regInputBuf[DATA_BITS_IDX]         = pCfg->dataBits;
+    regInputBuf[STOP_BITS_IDX]         = pCfg->stopBits;
+    regInputBuf[CRC_IDX]               = pCfg->crc;
+    // Write to flash flag
+    regInputBuf[WRITE_FLAG_IDX]        = 0;
 
     mb_mem_mutex = xSemaphoreCreateMutexStatic(&mb_mem_mutex_buf);
     assert(NULL != mb_mem_mutex);
@@ -169,6 +204,9 @@ bool mb_mem_set_holding(uint16_t const addr,
         size_t const idx = (size_t)(addr - (uint16_t)REG_HOLDING_START);
         (void)memcpy(&regHoldingBuf[idx], p_data, data_sz * sizeof(uint16_t));
     }
+
+    // special - write config values
+    if()
 
     return bStatus;
 }
