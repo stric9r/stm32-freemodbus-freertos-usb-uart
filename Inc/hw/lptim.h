@@ -15,6 +15,10 @@
   *
   ******************************************************************************
   */
+/*
+ * Modified by Stric Roberts, 2026.
+ * MIT License — see LICENSE in the project root.
+ */
 
 #ifndef __LPTIM_H__
 #define __LPTIM_H__

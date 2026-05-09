@@ -15,6 +15,10 @@
   *
   ******************************************************************************
   */
+/*
+ * Modified by Stric Roberts, 2026.
+ * MIT License — see LICENSE in the project root.
+ */
 
 #ifndef __USBD_DESC__C__
 #define __USBD_DESC__C__

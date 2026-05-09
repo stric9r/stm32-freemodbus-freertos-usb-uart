@@ -15,6 +15,10 @@
   *
   ******************************************************************************
   */
+/*
+ * Modified by Stric Roberts, 2026.
+ * MIT License — see LICENSE in the project root.
+ */
 
 #include "usbd_cdc_if.h"
 #include "usb_device.h"

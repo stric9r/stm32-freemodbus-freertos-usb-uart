@@ -1,4 +1,9 @@
 /**
+  ******************************************************************************
+  * Stric Roberts, 2026. MIT License — see LICENSE in the project root.
+  ******************************************************************************
+  */
+/**
  * @file modbus_mem.c
  * @brief Modbus register memory with mutex-protected access.
  *

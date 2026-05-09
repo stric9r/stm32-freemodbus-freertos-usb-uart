@@ -1,5 +1,10 @@
 /**
   ******************************************************************************
+  * Stric Roberts, 2026. MIT License — see LICENSE in the project root.
+  ******************************************************************************
+  */
+/**
+  ******************************************************************************
   * @file    usart.c
   * @brief   This file provides code for the configuration
   *          of the USART instances.

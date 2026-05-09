@@ -14,6 +14,10 @@
   *
   ******************************************************************************
   */
+/*
+ * Modified by Stric Roberts, 2026.
+ * MIT License — see LICENSE in the project root.
+ */
 #ifndef __STM32L5xx_IT_H
 #define __STM32L5xx_IT_H
 

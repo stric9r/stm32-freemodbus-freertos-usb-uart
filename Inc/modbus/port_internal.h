@@ -1,5 +1,17 @@
+/**
+  ******************************************************************************
+  * @file           : port_internal.h
+  * @brief          : Hardware binding macros for USART2 and LPTIM1
+  ******************************************************************************
+  * Stric Roberts, 2026. MIT License — see LICENSE in the project root.
+  ******************************************************************************
+  */
 #ifndef _PORT_INTERNAL_H
 #define _PORT_INTERNAL_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #include "stm32l5xx_hal.h"
 #include "gpio.h"
@@ -159,5 +171,9 @@ static inline void vMBTimerDebugSetLow( void )
 #define vMBTimerDebugSetLow()
 #endif
 
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // _PORT_INTERNAL_H

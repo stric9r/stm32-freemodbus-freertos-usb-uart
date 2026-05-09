@@ -85,6 +85,10 @@
   *
   ******************************************************************************
   */
+/*
+ * Modified by Stric Roberts, 2026.
+ * MIT License — see LICENSE in the project root.
+ */
 
 /** @addtogroup CMSIS
   * @{

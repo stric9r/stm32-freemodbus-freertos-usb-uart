@@ -1,3 +1,12 @@
+/**
+  ******************************************************************************
+  * @file           : system.h
+  * @brief          : Task stack sizes, priorities, and
+  *                   system_app_init() declaration
+  ******************************************************************************
+  * Stric Roberts, 2026. MIT License — see LICENSE in the project root.
+  ******************************************************************************
+  */
 #ifndef SYSTEM_H
 #define SYSTEM_H
 

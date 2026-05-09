@@ -15,6 +15,10 @@
   *
   ******************************************************************************
   */
+/*
+ * Modified by Stric Roberts, 2026.
+ * MIT License — see LICENSE in the project root.
+ */
 #ifndef __ICACHE_H__
 #define __ICACHE_H__
 

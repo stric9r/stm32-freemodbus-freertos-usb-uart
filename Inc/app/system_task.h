@@ -1,3 +1,12 @@
+/**
+  ******************************************************************************
+  * @file           : system_task.h
+  * @brief          : Watchdog coordinator task: SystemTaskId_t enum
+  *                   and check-in API
+  ******************************************************************************
+  * Stric Roberts, 2026. MIT License — see LICENSE in the project root.
+  ******************************************************************************
+  */
 #ifndef SYSTEM_TASK_H
 #define SYSTEM_TASK_H
 

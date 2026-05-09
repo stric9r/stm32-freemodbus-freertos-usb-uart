@@ -1,4 +1,9 @@
 /**
+  ******************************************************************************
+  * Stric Roberts, 2026. MIT License — see LICENSE in the project root.
+  ******************************************************************************
+  */
+/**
  * @file portserial_usb.c
  * @brief CDC byte-level serial interface for the USB Modbus port.
  *

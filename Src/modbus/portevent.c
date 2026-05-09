@@ -1,3 +1,11 @@
+/**
+  ******************************************************************************
+  * @file           : portevent.c
+  * @brief          : FreeModbus port: event queue using a statically-allocated FreeRTOS queue
+  ******************************************************************************
+  * Stric Roberts, 2026. MIT License — see LICENSE in the project root.
+  ******************************************************************************
+  */
 #include "mb.h"
 #include "mbport.h"
 

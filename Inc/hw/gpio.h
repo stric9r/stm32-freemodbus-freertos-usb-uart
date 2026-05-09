@@ -1,4 +1,3 @@
-/* USER CODE BEGIN Header */
 /**
   ******************************************************************************
   * @file    gpio.h
@@ -16,7 +15,10 @@
   *
   ******************************************************************************
   */
-/* USER CODE END Header */
+/*
+ * Modified by Stric Roberts, 2026.
+ * MIT License — see LICENSE in the project root.
+ */
 /* Define to prevent recursive inclusion -------------------------------------*/
 #ifndef __GPIO_H__
 #define __GPIO_H__

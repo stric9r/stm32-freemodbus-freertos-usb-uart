@@ -15,6 +15,10 @@
   *
   ******************************************************************************
   */
+/*
+ * Modified by Stric Roberts, 2026.
+ * MIT License — see LICENSE in the project root.
+ */
 
 #include "usbd_desc.h"
 
@@ -196,9 +200,7 @@ uint8_t * USBD_CDC_SerialStrDescriptor(USBD_SpeedTypeDef speed, uint16_t *length
    * ID */
   get_serial_num();
 
-  /* USER CODE BEGIN USBD_CDC_SerialStrDescriptor */
 
-  /* USER CODE END USBD_CDC_SerialStrDescriptor */
 
   return (uint8_t *) USBD_StringSerial;
 }
