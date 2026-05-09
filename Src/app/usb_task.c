@@ -1,7 +1,8 @@
 /**
   ******************************************************************************
   * @file           : usb_task.c
-  * @brief          : USB CDC task: initialises USB device and runs the Modbus USB adapter
+  * @brief          : USB CDC task: initialises USB device and
+  *                   runs the Modbus USB adapter
   ******************************************************************************
   * Stric Roberts, 2026. MIT License — see LICENSE in the project root.
   ******************************************************************************

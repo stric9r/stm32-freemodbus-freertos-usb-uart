@@ -1,7 +1,8 @@
 /**
   ******************************************************************************
   * @file           : portserial.h
-  * @brief          : Transport mode selection (COMMS_MODBUS_PORT) and UART defaults
+  * @brief          : Transport mode selection (COMMS_MODBUS_PORT)
+  *                   and UART defaults
   ******************************************************************************
   * Stric Roberts, 2026. MIT License — see LICENSE in the project root.
   ******************************************************************************

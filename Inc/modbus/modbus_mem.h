@@ -1,7 +1,8 @@
 /**
   ******************************************************************************
   * @file           : modbus_mem.h
-  * @brief          : Shared Modbus register bank API (holding and input registers)
+  * @brief          : Shared Modbus register bank API
+  *                   (holding and input registers)
   ******************************************************************************
   * Stric Roberts, 2026. MIT License — see LICENSE in the project root.
   ******************************************************************************

@@ -1,7 +1,8 @@
 /**
   ******************************************************************************
   * @file           : portserial_usb.h
-  * @brief          : USB CDC serial port layer: RX stream buffer, TX flush, transport-mux API
+  * @brief          : USB CDC serial port layer: RX stream buffer,
+  *                   TX flush, transport-mux API
   ******************************************************************************
   * Stric Roberts, 2026. MIT License — see LICENSE in the project root.
   ******************************************************************************
