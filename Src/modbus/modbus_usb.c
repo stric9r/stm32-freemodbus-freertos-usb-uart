@@ -86,7 +86,7 @@ static uint8_t slaveAddr;
 void modbus_usb_init(void)
 {
     portserial_usb_init();
-    slaveAddr = DEFAULT_SLAVE_ADDR;
+    slaveAddr = mb_mem_get_config()->slaveAddr;
 }
 
 /**

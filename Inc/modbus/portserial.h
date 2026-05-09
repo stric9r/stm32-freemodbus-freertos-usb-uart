@@ -14,18 +14,39 @@
 extern "C" {
 #endif
 
-// Serial port settings
+/* Default Modbus port configuration — change these to remap compile-time defaults */
+#ifndef DEFAULT_SLAVE_ADDR
+#define DEFAULT_SLAVE_ADDR  0x0Au
+#endif
+
+#ifndef DEFAULT_MODE
 #define DEFAULT_MODE        MB_RTU
-#define DEFAULT_BAUDERATE   115200
+#endif
+
+#ifndef DEFAULT_BAUDERATE
+#define DEFAULT_BAUDERATE   115200UL
+#endif
+
+#ifndef DEFAULT_PARITY
 #define DEFAULT_PARITY      MB_PAR_NONE
+#endif
+
+#ifndef DEFAULT_DATA_BITS
+#define DEFAULT_DATA_BITS   8u
+#endif
+
+#ifndef DEFAULT_STOP_BITS
 #define DEFAULT_STOP_BITS   1u
+#endif
 
 /* Select active transport — set for your product */
 #define COMMS_MODBUS_UART     0
 #define COMMS_MODBUS_USB      1
 #define COMMS_MODBUS_DYNAMIC  2
 
+#ifndef COMMS_MODBUS_PORT
 #define COMMS_MODBUS_PORT     COMMS_MODBUS_DYNAMIC
+#endif
 
 #ifdef __cplusplus
 }
