@@ -155,6 +155,23 @@ extern "C" {
         }                                                                         \
     }
 
+/**
+ * @defgroup MBCoil  Modbus coil GPIO configuration
+ *
+ * Binds the coil callbacks to a specific GPIO port and pin count.
+ * To remap coils to a different port, update only this block.
+ *
+ *   GPIO_COIL_PORT  — GPIO peripheral base-address pointer (currently GPIOE)
+ *   GPIO_COIL_NPINS — number of coil output pins (PE0-PE7)
+ *
+ * The pin array (coilPins[]) is defined in modbus_task.c alongside the
+ * callbacks that use it.
+ * @{
+ */
+#define GPIO_COIL_PORT  GPIOE
+#define GPIO_COIL_NPINS 8u
+/** @} */
+
 /* Debug helper functions */
 #if MB_TIMER_DEBUG_RED == 1
 static inline void vMBTimerDebugSetHigh( void )

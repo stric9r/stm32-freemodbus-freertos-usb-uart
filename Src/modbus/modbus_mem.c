@@ -37,7 +37,7 @@ static SemaphoreHandle_t mb_mem_mutex;
 __attribute__((section(".nvm_mb")))
 volatile modbus_cfg_t const nvmMbConfig;
 
-static modbus_cfg_t const defaultCfg = {
+static volatile modbus_cfg_t const defaultCfg = {
     .slaveAddr = DEFAULT_SLAVE_ADDR,
     .mode      = (uint8_t)DEFAULT_MODE,
     .baudRate  = DEFAULT_BAUDERATE,
@@ -291,7 +291,7 @@ modbus_cfg_t const * mb_mem_get_config(void)
     USHORT const computed = usMBCRC16((UCHAR const *)&nvmMbConfig,
                                       (USHORT)offsetof(modbus_cfg_t, crc));
 
-    modbus_cfg_t const * pResult =
+    volatile modbus_cfg_t const * pResult =
         (computed == nvmMbConfig.crc) ? &nvmMbConfig : &defaultCfg;
 
     (void)xSemaphoreGive(mb_mem_mutex);

@@ -23,15 +23,18 @@ extern "C" {
 #define REG_INPUT_START     1u
 #define REG_INPUT_NREGS     100u
 
-/* Coil registers */
-// @todo [2026-04-25] Not implemented — eMBRegCoilsCB returns MB_ENOREG
-#define REG_COIL_START      0u
-#define REG_COIL_NREGS      0u
+/* Coil registers — PE0-PE7, one bit per pin */
+#define REG_COIL_START      1u
+#define REG_COIL_NREGS      8u
 
-/* Discrete input registers */
-// @todo [2026-04-25] Not implemented — eMBRegDiscreteCB returns MB_ENOREG
-#define REG_DISCRETE_START  0u
-#define REG_DISCRETE_NREGS  0u
+/* Discrete input registers — GREEN/RED/BLUE LED ODR + BUTTON IDR.
+ * REG_DISCRETE_NREGS is declared as 16 so a master polling a full two-byte
+ * block succeeds; bits REG_DISCRETE_NGPIO..15 always read 0.
+ * REG_DISCRETE_NGPIO is the number of GPIO-backed entries in the discretePorts
+ * and discretePins arrays in modbus_task.c — update both together. */
+#define REG_DISCRETE_START  1u
+#define REG_DISCRETE_NREGS  16u
+#define REG_DISCRETE_NGPIO  4u
 
 #ifdef __cplusplus
 }
