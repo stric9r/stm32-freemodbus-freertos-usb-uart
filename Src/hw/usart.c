@@ -30,7 +30,6 @@ UART_HandleTypeDef * USART2_GetHandle(void)
     return &huart2;
 }
 
-// @todo [2026-4-12] Can we utilize DMA here?  Freemodbus may need modification.
 DMA_HandleTypeDef hdma_usart2_tx;
 
 static void MX_USART2_UART_Init(uint32_t const baudeRate,
@@ -125,10 +124,9 @@ static void MX_USART2_UART_Init(uint32_t const baudeRate,
   assert(HAL_OK == HAL_UARTEx_SetRxFifoThreshold(&huart2, UART_RXFIFO_THRESHOLD_1_8));
   assert(HAL_OK == HAL_UARTEx_DisableFifoMode(&huart2));
 
-  // todo [2026-4-19] Bug usart
+  // todo [2026-4-19] How to track USART initialized?
   // Can't use a b_initialized as the MspInit is called via HAL_UART_Init.
-  // Need better way.  Also I think modbus enable/disable functionality is going
-  // to be different.
+  // Need better way.
 }
 
 /**
@@ -171,7 +169,7 @@ void HAL_UART_MspInit(UART_HandleTypeDef * pUartHandle)
 
   /* USART2 DMA Init */
   /* USART2_TX Init */
-  /* @todo [2026-4-12] Can we utilize DMA here?  Freemodbus may need modification.
+  /*
   hdma_usart2_tx.Instance = DMA1_Channel3;
   hdma_usart2_tx.Init.Request = DMA_REQUEST_USART2_TX;
   hdma_usart2_tx.Init.Direction = DMA_MEMORY_TO_PERIPH;
@@ -266,7 +264,8 @@ void usart_uart_init(uint8_t  const usartNum,
  */
 void usart_uart_bringup(uint8_t const usartNum)
 {
-  // @todo [2026-4-12] Protect USART with a mutex
+  // Not protected by mutex since only modbus task accesses it
+  // If more tasks access it, then protection is needed
   if(2u == usartNum)
   {
     HAL_UART_MspInit(&huart2);
@@ -287,7 +286,6 @@ void usart_uart_bringup(uint8_t const usartNum)
  */
 void usart_uart_teardown(uint8_t const usartNum)
 {
-  // @todo [2026-4-12] Protect USART with a mutex
   if(2u == usartNum)
   {
     HAL_UART_MspDeInit(&huart2);
@@ -313,7 +311,6 @@ void usart_uart_teardown(uint8_t const usartNum)
  */
 void usart_uart_enable_rx(uint8_t const usartNum, bool const bEnable)
 {
-  // @todo [2026-4-12] Protect USART with a mutex
   if(2u == usartNum)
   {
     if(bEnable)
@@ -337,7 +334,6 @@ void usart_uart_enable_rx(uint8_t const usartNum, bool const bEnable)
  */
 void usart_uart_enable_tx(uint8_t const usartNum, bool const bEnable)
 {
-  // @todo [2026-4-12] Protect USART with a mutex
   if(2u == usartNum)
   {
     if(bEnable)

@@ -65,9 +65,6 @@ static volatile modbus_cfg_t const defaultCfg = {
  */
 void mb_mem_init(void)
 {
-    // @todo [2026-04-25] Read initial holding register values from flash on startup.
-    // @todo [2026-04-25] Persist holding register writes to flash on change.
-
     // We need atleast the default config size
     assert(sizeof(modbus_cfg_t) <= (REG_HOLDING_NREGS*2u));
     assert(sizeof(modbus_cfg_t) <= (REG_INPUT_NREGS*2u));
@@ -284,7 +281,7 @@ uint16_t const * mb_mem_get_input(uint16_t const addr)
  * compile-time @c defaultCfg when the flash is erased or corrupt. Never returns
  * NULL — callers can use the result directly without a validity check.
  */
-modbus_cfg_t const * mb_mem_get_config(void)
+volatile modbus_cfg_t const * mb_mem_get_config(void)
 {
     (void)xSemaphoreTake(mb_mem_mutex, portMAX_DELAY);
 

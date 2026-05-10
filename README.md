@@ -32,15 +32,35 @@ Base example was the FreeRTOS Timers template, heavily modified.
 
 #### Port Headers
 
-The Modbus port layer is split across several headers, each with a distinct configuration scope:
+The Modbus port layer headers fall into two distinct groups: files that a porter **must** touch when porting FreeModbus to new hardware, and files that are application-level and have no FreeModbus porting requirement.
 
-| Header | Configures | Porting role |
-|--------|-----------|--------------|
-| [`Inc/modbus/portserial.h`](Inc/modbus/portserial.h) | Transport mode (`COMMS_MODBUS_PORT`); UART defaults — baud rate, parity, stop bits, RTU/ASCII mode | Standard porting file; `COMMS_MODBUS_PORT` is a USB-specific addition |
-| [`Inc/modbus/port_internal.h`](Inc/modbus/port_internal.h) | Hardware peripheral bindings: which LPTIM instance drives t3.5 timing (`MB_TIMER`), which USART instance is the Modbus serial port (`MB_SERIAL`), associated IRQ names and register macros | Standard porting — change only this file to migrate to a different USART or timer |
-| [`Inc/modbus/port_addresses.h`](Inc/modbus/port_addresses.h) | Modbus slave address (`DEFAULT_SLAVE_ADDR`); holding and input register start addresses and counts; coil and discrete register placeholders | Application configuration — not hardware-specific |
-| [`Inc/modbus/port.h`](Inc/modbus/port.h) | FreeModbus type aliases (`BOOL`, `UCHAR`, `USHORT`, etc.); critical section macros mapped to `__disable_irq` / `__enable_irq` | Standard FreeModbus porting layer — minimal changes from the reference port |
-| [`Inc/modbus/portserial_usb.h`](Inc/modbus/portserial_usb.h) | USB CDC byte layer API (`portserial_usb_init`, `portserial_usb_flush_tx`); transport-mux API (`vMBPortSetUsbActive`, `vMBPortUsbInjectFrame`); RX stream buffer handle (`usbRxStream`) | Added for USB — no equivalent in a UART-only port |
+##### FreeModbus port layer — must implement
+
+These three headers are the mandatory FreeModbus porting surface. A UART-only port to different STM32 hardware requires changes only to these files and their associated `.c` files (`portevent.c`, `portserial.c`, `porttimer.c`).
+
+| Header | What it defines | What to change when porting |
+|--------|----------------|----------------------------|
+| [`Inc/modbus/port.h`](Inc/modbus/port.h) | FreeModbus type aliases (`BOOL`, `UCHAR`, `USHORT`, etc.); critical-section macros (`ENTER_CRITICAL_SECTION` / `EXIT_CRITICAL_SECTION`) mapped to `__disable_irq` / `__enable_irq` | Map critical sections to your RTOS or bare-metal primitive. Type aliases rarely need changing on Cortex-M. |
+| [`Inc/modbus/port_internal.h`](Inc/modbus/port_internal.h) | Hardware peripheral bindings: USART instance (`MB_SERIAL`, `MB_SERIAL_INSTANCE`), LPTIM instance (`MB_TIMER`, `MB_TIMER_INSTANCE`), IRQ vector names, direct-register byte I/O macros (`MB_SERIAL_PUT_BYTE`, `MB_SERIAL_GET_BYTE`), interrupt arm/mask macros, full ISR bodies (`MB_SERIAL_IRQ_FUNC`, `MB_TIMER_IRQ_FUNC`), coil GPIO port (`GPIO_COIL_PORT`, `GPIO_COIL_NPINS`) | **The primary migration target.** Change `MB_SERIAL_INSTANCE` and `MB_TIMER_INSTANCE` to your USART and timer. Update the IRQ names, register macros, and ISR bodies to match the new peripheral's register layout. |
+| [`Inc/modbus/portserial.h`](Inc/modbus/portserial.h) | Compile-time transport selector (`COMMS_MODBUS_PORT`: UART=0, USB=1, DYNAMIC=2); compile-time UART defaults (`DEFAULT_SLAVE_ADDR`, `DEFAULT_BAUDERATE`, `DEFAULT_PARITY`, `DEFAULT_STOP_BITS`, `DEFAULT_MODE`) | Set `COMMS_MODBUS_PORT` to `COMMS_MODBUS_UART` for a UART-only port. Adjust defaults for your product's line parameters. |
+
+##### USB transport addition — skip for UART-only
+
+This header and its associated source files (`portserial_usb.c`, `modbus_usb.c`) exist solely to support the USB CDC second transport. A UART-only port does not need them.
+
+| Header | What it defines |
+|--------|----------------|
+| [`Inc/modbus/portserial_usb.h`](Inc/modbus/portserial_usb.h) | USB CDC RX stream buffer handle (`usbRxStream`); low-level byte layer (`portserial_usb_init`, `portserial_usb_put_byte`, `portserial_usb_flush_tx`); transport-mux API (`vMBPortSetUsbActive`, `vMBPortUsbInjectFrame`, `xMBPortIsUsbActive`) |
+
+##### Application layer — no FreeModbus porting requirement
+
+These headers are application code that happens to live in `Inc/modbus/` for proximity to the port layer. They contain no FreeModbus porting obligations and could reasonably move to `Inc/app/`.
+
+| Header | What it defines | Notes |
+|--------|----------------|-------|
+| [`Inc/modbus/port_addresses.h`](Inc/modbus/port_addresses.h) | Register start addresses and counts for all four register types; default slave address; `REG_DISCRETE_NGPIO` sentinel for the GPIO-backed discrete count | Edit to define your register map. `REG_COIL_NREGS` and the `coilPins[]` array in `modbus_task.c` must be updated together. |
+| [`Inc/modbus/modbus_mem.h`](Inc/modbus/modbus_mem.h) | Shared register bank API (`mb_mem_get_holding`, `mb_mem_set_holding`, `mb_mem_get_input`); flash-persistent config type (`modbus_cfg_t`) and get/set API | Replace or rewrite for your register storage strategy. The mutex and fail-fast timeout pattern is specific to this project's FreeRTOS design. |
+| [`Inc/modbus/modbus_port_ownership.h`](Inc/modbus/modbus_port_ownership.h) | Bus ownership arbitration API (`modbus_port_ownership_try_claim`, `modbus_port_ownership_refresh`, `modbus_port_ownership_release`) | Only exists to support DYNAMIC dual-transport. Delete entirely for a single-transport port. |
 
 #### Transport Selection
 
@@ -54,7 +74,7 @@ A compile-time define in `Inc/modbus/portserial.h` selects which physical port t
 #define COMMS_MODBUS_PORT     COMMS_MODBUS_DYNAMIC
 ```
 
-In **DYNAMIC** mode both ports are active simultaneously.  A binary semaphore in `modbus_port_ownership.c` ensures only one transport processes frames at a time.  The first complete frame to arrive claims the bus.  A 5-second inactivity one-shot FreeRTOS timer releases the bus automatically so the other transport can take over.
+In **DYNAMIC** mode both ports are active simultaneously.  A binary semaphore in `modbus_port_ownership.c` ensures only one transport processes frames at a time.  The first complete frame to arrive claims the bus.  A 100 ms inactivity one-shot FreeRTOS timer releases the bus automatically so the other transport can take over.
 
 ### Tasks
 
@@ -62,59 +82,8 @@ In **DYNAMIC** mode both ports are active simultaneously.  A binary semaphore in
 |------|----------|----------|
 | `modbus_task` | 5 | Runs the FreeModbus polling loop (`eMBPoll()`). Handles all register callbacks for both UART and USB frames. |
 | `usb_task` | 4 | Waits for USB CDC frames, pre-validates them, and feeds them into the FreeModbus RTU state machine via the port layer mux. |
-| Idle | 0 | FreeRTOS idle task (static allocation). |
-
-### UART Modbus Path
-
-```
-USART2 RX interrupt
-  → MB_SERIAL_IRQ_FUNC()  (port_internal.h)
-  → pxMBFrameCBByteReceived()  (= xMBRTUReceiveFSM, mbrtu.c)
-      reads byte via xMBPortSerialGetByte()  →  USART2->RDR
-      restarts LPTIM1 t3.5 countdown via vMBPortTimersEnable()
-
-LPTIM1 interrupt fires after t3.5 silence
-  → pxMBPortCBTimerExpired()  (= xMBRTUTimerT35Expired)
-  → posts EV_FRAME_RECEIVED to FreeModbus event queue
-
-modbus_task / eMBPoll() wakes
-  → eMBRTUReceive() validates CRC, extracts address + PDU
-  → function-code handler (eMBRegHoldingCB / eMBRegInputCB in modbus_task.c)
-      accesses shared registers via modbus_mem (mutex-protected)
-  → eMBRTUSend() calls vMBPortSerialEnable(FALSE, TRUE)
-      → enables USART2 TXE interrupt
-      → byte-by-byte: USART2 TXE ISR → xMBRTUTransmitFSM → xMBPortSerialPutByte → USART2->TDR
-  → vMBPortSerialEnable(TRUE, FALSE) restores RX mode
-```
-
-### USB Modbus Path
-
-```
-CDC_Receive_FS (USB ISR)
-  → xStreamBufferSendFromISR(usbRxStream, ...)
-  → re-arms USB OUT endpoint, yields to higher-priority task if woken
-
-usb_task / modbus_usb_run() unblocks from xStreamBufferReceive
-  → drains stream buffer with 2 ms inter-byte timeout (t3.5 equivalent)
-  → pre-validates: length ≥ 8 bytes, address match, CRC == 0
-  → claims port ownership (DYNAMIC mode) — discards if UART owns the bus
-  → vMBPortSetUsbActive(true) — redirects FreeModbus byte I/O to USB
-  → MB_SERIAL_DISABLE_RX_IRQ() — masks UART RX during injection
-  → vMBPortUsbInjectFrame()
-      for each byte: stage in usbPendingByte, call pxMBFrameCBByteReceived()
-                     xMBRTUReceiveFSM reads usbPendingByte instead of USART2->RDR
-                     vMBPortTimersEnable() suppressed (xMBPortIsUsbActive() guard)
-      after last byte: pxMBPortCBTimerExpired() posts EV_FRAME_RECEIVED
-
-modbus_task / eMBPoll() wakes (same path as UART)
-  → function-code handler runs, accesses modbus_mem
-  → eMBRTUSend() calls vMBPortSerialEnable(FALSE, TRUE)
-      → USB TX path: drives xMBRTUTransmitFSM synchronously (no TXE interrupt)
-                     xMBPortSerialPutByte accumulates bytes in USB TX buffer
-                     portserial_usb_flush_tx() fires CDC_Transmit_FS in one shot
-                     pxMBPortCBTimerExpired() completes FreeModbus TX cycle
-  → vMBPortSerialEnable(TRUE, FALSE) clears bUsbActive, re-enables UART RX IRQ
-```
+| `system_task` | 3 | Watchdog coordinator — pets the IWDG only after all registered tasks have checked in within the window. |
+| `Idle` | 0 | FreeRTOS idle task (static allocation). |
 
 ### Shared Register Memory
 
@@ -122,14 +91,43 @@ Both transports share a single register bank owned by `modbus_mem.c`.  A FreeRTO
 
 | Register bank | Start address | Count | Notes |
 |---------------|--------------|-------|-------|
-| Holding | 1 | 100 | Read/write via FC03 / FC16 |
+| Holding | 1 | 100 | Read/write via FC03 / FC06 / FC16 |
 | Input | 1 | 100 | Read-only via FC04 |
-| Coil | — | — | Not implemented |
-| Discrete | — | — | Not implemented |
+| Coil | 1 | 8 | Read/write via FC01 / FC05 / FC15 — drives PE0-PE7 |
+| Discrete | 1 | 16 | Read-only via FC02 — 4 GPIO-backed, 12 always 0 |
 
 Addresses and counts are set in `Inc/modbus/port_addresses.h`.
 
-Both the holding and input banks are initialised at boot from the active flash config (or compile-time defaults if flash is erased). They share the same register layout:
+#### Coil Register Map
+
+| Coil address | GPIO pin | Notes |
+|-------------|----------|-------|
+| 1 | PE0 | General-purpose output |
+| 2 | PE1 | General-purpose output |
+| 3 | PE2 | General-purpose output |
+| 4 | PE3 | General-purpose output |
+| 5 | PE4 | General-purpose output |
+| 6 | PE5 | General-purpose output |
+| 7 | PE6 | General-purpose output |
+| 8 | PE7 | General-purpose output |
+
+All pins are push-pull, low speed, initially driven low at boot.  Port E was chosen because all 16 of its pins are unused by any other peripheral on the NUCLEO-L552ZE-Q.
+
+#### Discrete Input Register Map
+
+| Discrete address | Source | Notes |
+|-----------------|--------|-------|
+| 1 | PC7 (GREEN LED) | Reflects current LED drive state via IDR |
+| 2 | PA9 (RED LED) | Reflects current LED drive state via IDR |
+| 3 | PB7 (BLUE LED) | Reflects current LED drive state via IDR |
+| 4 | PC13 (BUTTON) | Raw pin level — active-low button reads 0 when pressed |
+| 5-16 | — | Always 0; declared to satisfy masters that poll 16-bit blocks |
+
+Push-pull output pins on the STM32L5 have their IDR tied to their ODR, so reading the IDR on an LED pin gives the current drive state without requiring a software shadow register.
+
+#### Input and Holding Register Map
+
+Both the holding and input banks are initialised at boot from the active flash config (or compile-time defaults if flash is erased). They share the same register layout.
 
 | Offset | Modbus address | Name | Content |
 |--------|---------------|------|---------|
@@ -209,27 +207,34 @@ When true, the three FreeModbus I/O functions behave as follows:
 ### Communications
 
 - **UART** — USART2, 115200 baud 8N1.  Configurable via Modbus registers.
-- **USB CDC** — virtual COM port via STM32L5 USB FS.  Baud rate setting ignored (USB ignores line coding for data routing).  Connect with any terminal: `screen /dev/ttyACM0 115200` on Linux, any COMxx port on Windows.
+- **USB CDC** — virtual COM port via STM32L5 USB FS.  Baud rate setting ignored (USB ignores line coding for data routing).
 
-Both ports speak Modbus RTU.  In DYNAMIC mode the first task to send a frame claims the bus for 5 seconds of inactivity.
+Both ports speak Modbus RTU by default, configurable via holding registers.  
+In DYNAMIC mode the first task to send a frame claims the bus for 5 seconds of inactivity.
 
 ### Supported Modbus Function Codes
 
 | FC | Name | Notes |
 |----|------|-------|
+| 01 | Read Coils | Coils 1-8 (PE0-PE7) |
+| 02 | Read Discrete Inputs | Discretes 1-4 GPIO-backed; 5-16 always 0 |
 | 03 | Read Holding Registers | |
 | 04 | Read Input Registers | |
+| 05 | Write Single Coil | Coils 1-8 (PE0-PE7) |
+| 15 (0x0F) | Write Multiple Coils | Coils 1-8 (PE0-PE7) |
 | 16 (0x10) | Write Multiple Registers | |
 
 All other function codes return exception 01 (Illegal Function).
 
 ### LEDs
 
-| LED | Behaviour |
-|-----|-----------|
-| RED | FreeModbus timer debug — set when LPTIM1 t3.5 timer is enabled, cleared when disabled (`MB_TIMER_DEBUG_RED == 1`) |
-| BLUE | Toggled every watchdog pet cycle (`WD_DEBUG_BLUE == 1`) |
-| GREEN | Set while USB owns the Modbus port (frame being processed), cleared on release (`USB_MODBUS_ACTIVE_DEBUG_GREEN == 1`) |
+| LED | GPIO | Behaviour |
+|-----|------|-----------|
+| RED | PA9 | FreeModbus timer debug — set when LPTIM1 t3.5 timer is enabled, cleared when disabled (`MB_TIMER_DEBUG_RED == 1`) |
+| BLUE | PB7 | Toggled every watchdog pet cycle (`WD_DEBUG_BLUE == 1`) |
+| GREEN | PC7 | Set while USB owns the Modbus port (frame being processed), cleared on release (`USB_MODBUS_ACTIVE_DEBUG_GREEN == 1`) |
+
+All three LED drive states are readable as discrete inputs 1-3 via FC02.
 
 ---
 
@@ -286,9 +291,15 @@ The `.project` and `.cproject` files are committed.  Select the **Debug** build 
 ├── Inc/
 │   ├── app/
 │   │   ├── FreeRTOSConfig.h           FreeRTOS kernel configuration
-│   │   └── system.h                   Task stack sizes and priorities
+│   │   ├── modbus_task.h              Modbus task entry point
+│   │   ├── modbus_usb.h               USB Modbus adapter entry points
+│   │   ├── system.h                   Task stack sizes and priorities
+│   │   ├── system_task.h              Watchdog coordinator API (register / check-in)
+│   │   └── usb_task.h                 USB task entry point
 │   ├── hw/
+│   │   ├── crc.h                      CRC peripheral interface
 │   │   ├── dma.h                      DMA peripheral interface
+│   │   ├── flash.h                    Flash erase/write interface (FLASH_MB)
 │   │   ├── gpio.h                     GPIO peripheral interface
 │   │   ├── icache.h                   Instruction cache interface
 │   │   ├── lptim.h                    LPTIM one-shot timer interface
@@ -304,11 +315,9 @@ The `.project` and `.cproject` files are committed.  Select the **Debug** build 
 │   ├── modbus/
 │   │   ├── modbus_mem.h               Shared register bank API
 │   │   ├── modbus_port_ownership.h    Port ownership arbitration API
-│   │   ├── modbus_task.h         UART Modbus task entry point
-│   │   ├── modbus_usb.h               USB Modbus adapter entry points
 │   │   ├── port_addresses.h           Register start addresses, counts, slave address
 │   │   ├── port.h                     FreeModbus port layer public interface
-│   │   ├── port_internal.h            Hardware macros for USART2 and LPTIM1
+│   │   ├── port_internal.h            Hardware macros for USART2, LPTIM1, coil GPIO
 │   │   ├── portserial.h               Transport selection (COMMS_MODBUS_PORT)
 │   │   └── portserial_usb.h           USB serial port API + transport mux API
 │   └── main.h                         Top-level includes and pin definitions
@@ -319,12 +328,20 @@ The `.project` and `.cproject` files are committed.  Select the **Debug** build 
 │
 ├── Src/
 │   ├── app/
-│   │   └── system.c                   Task creation (conditional on COMMS_MODBUS_PORT)
+│   │   ├── modbus_task.c              modbus_task: eMBInit/eMBPoll loop + all register callbacks
+│   │   ├── modbus_usb.c               usb_task helper: frame accumulation, pre-validation, injection
+│   │   ├── system.c                   Task creation (conditional on COMMS_MODBUS_PORT)
+│   │   ├── system_task.c              Watchdog coordinator task
+│   │   └── usb_task.c                 USB CDC frame accumulation and Modbus injection task
 │   ├── hw/
+│   │   ├── crc.c                      CRC peripheral driver
 │   │   ├── dma.c                      DMA peripheral initialisation
-│   │   ├── gpio.c                     GPIO peripheral initialisation
+│   │   ├── flash.c                    Flash erase/write driver (used by modbus_mem for FLASH_MB)
+│   │   ├── gpio.c                     GPIO peripheral initialisation (LEDs, button, coil outputs PE0-PE7)
 │   │   ├── icache.c                   Instruction cache initialisation
 │   │   ├── lptim.c                    LPTIM one-shot timer (FreeModbus t3.5)
+│   │   ├── startup/
+│   │   │   └── startup_stm32l552xx.s  Reset handler and vector table
 │   │   ├── stm32l5xx_hal_msp.c        HAL MSP peripheral clock/pin callbacks
 │   │   ├── stm32l5xx_hal_timebase_tim.c  HAL tick timebase (TIM6)
 │   │   ├── stm32l5xx_it.c             Interrupt service routines
@@ -336,10 +353,8 @@ The `.project` and `.cproject` files are committed.  Select the **Debug** build 
 │   │   ├── usbd_desc.c                USB device descriptor strings
 │   │   └── watchdog.c                 IWDG hardware watchdog driver
 │   ├── modbus/
-│   │   ├── modbus_mem.c               Shared holding/input register arrays + mutex
+│   │   ├── modbus_mem.c               Shared holding/input register arrays + mutex + flash config
 │   │   ├── modbus_port_ownership.c    Binary semaphore + one-shot timer for bus arbitration
-│   │   ├── modbus_task.c         modbus_task: eMBInit/eMBPoll loop + register callbacks
-│   │   ├── modbus_usb.c               usb_task helper: frame accumulation, pre-validation, injection
 │   │   ├── portevent.c                FreeModbus port — event queue (FreeRTOS queue, context-aware)
 │   │   ├── portserial.c               FreeModbus port — USART2 byte I/O + USB transport mux
 │   │   ├── portserial_usb.c           USB CDC byte layer — stream buffer, TX accumulation buffer
@@ -364,11 +379,7 @@ The `.project` and `.cproject` files are committed.  Select the **Debug** build 
 
 ## Known Limitations / TODOs
 
-- Coil and discrete input registers not implemented (return exception 01).
-- Modbus configuration (slave address, baud rate, parity, stop bits) is runtime-configurable by writing holding registers 1–8 and triggering a flash write via register 9 (`WRITE_FLAG`). The device reboots automatically to apply the new config.
-- General holding register values not persisted to flash across power cycles.
 - No DMA on USART2 — each byte goes through an ISR.  FreeModbus's byte-at-a-time model makes DMA integration non-trivial.
-- CRC computation for the response in the USB path requires a second read of the register bank to calculate the CRC separately from the TX data accumulation path (this is handled by FreeModbus itself and is not a concern for normal operation).
 
 ---
 
@@ -415,7 +426,7 @@ For `hpcd_USB_FS` (`Src/hw/usbd_conf.c`) and `htim6` (`Src/hw/stm32l5xx_hal_time
 
 STM32CubeMX is convenient for project scaffolding but its generated code structure conflicts with maintainability goals:
 
-- Mixed naming conventions (camelCase, PascalCase, snake_case) from three different sources (HAL, FreeRTOS, application).
+- Mixed naming conventions (camelCase, PascalCase, snake_case) from three different sources (HAL, FreeRTOS, FreeModbus, application).
 - Generated code structure is harder to maintain than hand-written equivalents — most generated files have been substantially rewritten.
 - FreeModbus is old and designed for single-port bare-metal use.  It cannot be instantiated twice (all state is in module-level statics), which is why the USB port uses a transport mux into the single FreeModbus instance rather than a second stack instance.
 - DMA integration with FreeModbus would require meaningful changes to the library.  Deferred.
