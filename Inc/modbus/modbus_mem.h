@@ -40,7 +40,7 @@ bool             mb_mem_set_holding(uint16_t const addr,
                                     uint16_t const * const p_data,
                                     size_t   const data_sz);
 uint16_t const * mb_mem_get_input(uint16_t const addr);
-modbus_cfg_t const * mb_mem_get_config(void);
+volatile modbus_cfg_t const * mb_mem_get_config(void);
 bool                 mb_mem_set_config(modbus_cfg_t const * const p_cfg);
 
 #ifdef __cplusplus

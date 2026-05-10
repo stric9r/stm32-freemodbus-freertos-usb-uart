@@ -37,7 +37,7 @@ static SemaphoreHandle_t mb_mem_mutex;
 __attribute__((section(".nvm_mb")))
 volatile modbus_cfg_t const nvmMbConfig;
 
-static modbus_cfg_t const defaultCfg = {
+static volatile modbus_cfg_t const defaultCfg = {
     .slaveAddr = DEFAULT_SLAVE_ADDR,
     .mode      = (uint8_t)DEFAULT_MODE,
     .baudRate  = DEFAULT_BAUDERATE,
@@ -65,9 +65,6 @@ static modbus_cfg_t const defaultCfg = {
  */
 void mb_mem_init(void)
 {
-    // @todo [2026-04-25] Read initial holding register values from flash on startup.
-    // @todo [2026-04-25] Persist holding register writes to flash on change.
-
     // We need atleast the default config size
     assert(sizeof(modbus_cfg_t) <= (REG_HOLDING_NREGS*2u));
     assert(sizeof(modbus_cfg_t) <= (REG_INPUT_NREGS*2u));
@@ -284,14 +281,14 @@ uint16_t const * mb_mem_get_input(uint16_t const addr)
  * compile-time @c defaultCfg when the flash is erased or corrupt. Never returns
  * NULL — callers can use the result directly without a validity check.
  */
-modbus_cfg_t const * mb_mem_get_config(void)
+volatile modbus_cfg_t const * mb_mem_get_config(void)
 {
     (void)xSemaphoreTake(mb_mem_mutex, portMAX_DELAY);
 
     USHORT const computed = usMBCRC16((UCHAR const *)&nvmMbConfig,
                                       (USHORT)offsetof(modbus_cfg_t, crc));
 
-    modbus_cfg_t const * pResult =
+    volatile modbus_cfg_t const * pResult =
         (computed == nvmMbConfig.crc) ? &nvmMbConfig : &defaultCfg;
 
     (void)xSemaphoreGive(mb_mem_mutex);
