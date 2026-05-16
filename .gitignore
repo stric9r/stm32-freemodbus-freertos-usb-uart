@@ -54,6 +54,10 @@ dkms.conf
 # AI
 CLAUDE.md
 
+# STM32CubeIDE generated IDE state — not useful for build reproducibility
+.settings/stm32cubeide.project.prefs
+.settings/com.st.stm32cube.ide.mcu.sfr*.prefs
+
 # debug information files
 *.dwo
 
