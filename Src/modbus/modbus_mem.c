@@ -76,7 +76,7 @@ void mb_mem_init(void)
     memset(regInputBuf,   0u, (REG_HOLDING_NREGS*2u));
 
     // Get config values and populate
-    modbus_cfg_t const * const pCfg = mb_mem_get_config();
+    volatile modbus_cfg_t const * const pCfg = mb_mem_get_config();
 
 
 
