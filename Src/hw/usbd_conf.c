@@ -31,7 +31,6 @@
 
 
 PCD_HandleTypeDef hpcd_USB_FS;
-void Error_Handler(void);
 
 
 static USBD_StatusTypeDef USBD_Get_USB_Status(HAL_StatusTypeDef hal_status);

@@ -37,7 +37,6 @@ extern "C" {
 // tasks can check in for watchdog to get pet
 #define SYSTEM_CHECK_IN_TIME_MS 15000u
 
-void Error_Handler(void);
 void SystemClock_Config(void);
 
 
