@@ -58,6 +58,9 @@ CLAUDE.md
 .settings/stm32cubeide.project.prefs
 .settings/com.st.stm32cube.ide.mcu.sfr*.prefs
 
+# VS Code
+.vscode/
+
 # debug information files
 *.dwo
 
