@@ -437,6 +437,11 @@ For `hpcd_USB_FS` (`Src/hw/usbd_conf.c`) and `htim6` (`Src/hw/stm32l5xx_hal_time
 - Fixed three race conditions that allowed USB and UART to interfere with each other under simultaneous traffic, causing state machine corruption and unexpected resets.
 - The port layer now correctly tracks the full UART request-response cycle — both the receive and transmit phases — and blocks the USB port from claiming the bus during either.
 
+**Modbus ASCII support**
+- Both UART and USB transports now support Modbus ASCII mode in addition to RTU.
+- USB pre-validation correctly handles ASCII frames — decodes the slave address and verifies the LRC rather than applying the RTU CRC check, which previously caused all ASCII frames to be silently discarded.
+- The flash configuration struct was tightened: data bits are no longer stored since FreeModbus hardcodes 7 for ASCII and 8 for RTU regardless. The DATA_BITS register is now computed from the active mode at boot.
+
 **Code cleanup**
 - Removed legacy error-handling scaffolding superseded by the new assert diagnostics.
 - Stripped unused newlib heap and syscall code; the build now produces zero warnings.
