@@ -10,6 +10,7 @@
 #include "mbport.h"
 
 #include "main.h"
+#include "portserial_usb.h"
 
 #include "FreeRTOS.h"
 #include "queue.h"
@@ -54,9 +55,21 @@ BOOL xMBPortEventInit(void)
  * reads the Cortex-M IPSR register: non-zero means an ISR is active and
  * the FromISR variant must be used. portYIELD_FROM_ISR triggers an
  * immediate context switch if a higher-priority task was unblocked.
+ *
+ * When EV_FRAME_RECEIVED is posted, clears the UART receive-active flag via
+ * vMBPortSerialNotifyFrameEnd() so bMBPortSerialUartIsIdle() returns true.
+ * This is the mode-agnostic hook point: RTU posts EV_FRAME_RECEIVED from the
+ * t3.5 timer ISR; ASCII posts it directly from xMBASCIIReceiveFSM() on CRLF
+ * detection.  Both paths converge here so bUartRxActive is cleared regardless
+ * of mode without any RTU-specific timer dependency.
  */
 BOOL xMBPortEventPost(eMBEventType eEvent)
 {
+    if (EV_FRAME_RECEIVED == eEvent)
+    {
+        vMBPortSerialNotifyFrameEnd();
+    }
+
     BaseType_t xResult;
 
     if (xPortIsInsideInterrupt())

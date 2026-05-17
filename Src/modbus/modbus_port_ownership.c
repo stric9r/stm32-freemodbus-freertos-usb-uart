@@ -88,20 +88,26 @@ void modbus_port_ownership_init(void)
 /**
  * @brief Attempt to claim port ownership (non-blocking, fail-fast).
  *
- * In DYNAMIC builds: tries @c xSemaphoreTake with timeout=0.  Returns true
- * if ownership was granted; false if another port already owns the bus —
- * the caller should discard the frame silently.
+ * In DYNAMIC builds: first checks bMBPortSerialUartIsIdle() to reject USB
+ * frames that arrive while UART is mid-frame.  The semaphore alone is
+ * insufficient because UART does not claim it per-byte — a USB frame could
+ * take the semaphore while eRcvState == STATE_RX_RCV and corrupt the RTU
+ * state machine.  Only if UART is idle is the semaphore attempted (timeout=0).
  *
  * In single-port builds: always returns true (ownership is implicit).
  *
- * @return true   Ownership claimed — call @c modbus_port_ownership_refresh()
- *                after the response is sent.
- * @return false  Another port owns the bus — discard this frame.
+ * @return true   Ownership claimed.
+ * @return false  UART is mid-frame, or another port already owns the bus.
  */
 bool modbus_port_ownership_try_claim(void)
 {
 #if COMMS_MODBUS_PORT == COMMS_MODBUS_DYNAMIC
-    return (pdTRUE == xSemaphoreTake(portOwnerSem, 0));
+    bool bClaim = false;
+    if (bMBPortSerialUartIsIdle())
+    {
+        bClaim = (pdTRUE == xSemaphoreTake(portOwnerSem, 0));
+    }
+    return bClaim;
 #else
     return true;
 #endif
