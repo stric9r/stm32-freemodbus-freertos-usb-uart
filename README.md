@@ -422,6 +422,61 @@ For `hpcd_USB_FS` (`Src/hw/usbd_conf.c`) and `htim6` (`Src/hw/stm32l5xx_hal_time
 
 ---
 
+---
+
+## Release Notes
+
+### Release 1.1
+
+**Branch:** `bugfix/fix_assert_issue` — based on Release 1.0
+
+#### Improvements
+
+**Assert diagnostics**
+- Failed assertions now capture the crash location (file, line, function, expression) into a reserved RAM region that survives a watchdog reset, enabling post-mortem diagnosis without a debugger.
+- If a debugger is attached at the time of the fault, execution halts for live inspection before the device resets.
+
+**Dual-transport stability (DYNAMIC mode)**
+- Fixed three race conditions that allowed USB and UART to interfere with each other under simultaneous traffic, causing state machine corruption and unexpected resets.
+- The port layer now correctly tracks the full UART request-response cycle — both the receive and transmit phases — and blocks the USB port from claiming the bus during either.
+
+**Code cleanup**
+- Removed legacy error-handling scaffolding superseded by the new assert diagnostics.
+- Stripped unused newlib heap and syscall code; the build now produces zero warnings.
+
+---
+
+### Release 1.0
+
+**Commit:** `b6853991`
+
+Initial release — FreeModbus RTU slave on the **STM32L552ZET6Q** (Cortex-M33, NUCLEO-L552ZE-Q).
+
+**Platform**
+- STM32L552ZET6Q — Cortex-M33, 110 MHz, 512 KB flash, 256 KB RAM
+- FreeRTOS V10.6.2
+- FreeModbus RTU slave — custom FreeRTOS port layer; vendor source unmodified
+
+**Communications**
+- UART — Modbus RTU, configurable baud rate, parity, stop bits, and slave address; configuration persisted to flash
+- USB CDC — virtual COM port as a second independent Modbus port sharing the same register bank
+- Both ports active simultaneously in DYNAMIC mode; first complete frame claims the bus
+
+**Supported function codes:** FC01, FC02, FC03, FC04, FC05, FC15, FC16
+
+**Register map**
+- 100 holding registers (read/write; offsets 0–8 are flash-persistent configuration)
+- 100 input registers (read-only; mirrors configuration)
+- 8 coil outputs (GPIO-backed)
+- 16 discrete inputs (4 GPIO-backed: three LEDs + user button; 12 always 0)
+
+**Other**
+- Hardware watchdog with per-task check-in — never pet unless all tasks are healthy
+- Hardware one-shot timer for Modbus inter-frame silence detection
+- CRC-validated flash configuration with compile-time defaults on first boot
+
+---
+
 ## Complaints
 
 STM32CubeMX is convenient for project scaffolding but its generated code structure conflicts with maintainability goals:
