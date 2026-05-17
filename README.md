@@ -136,7 +136,7 @@ Both the holding and input banks are initialised at boot from the active flash c
 | 2 | 3 | `BAUD_RATE_LO` | Baud rate bits [15:0] |
 | 3 | 4 | `BAUD_RATE_HI` | Baud rate bits [31:16] |
 | 4 | 5 | `PARITY` | `eMBParity`: 0 = none, 1 = odd, 2 = even |
-| 5 | 6 | `DATA_BITS` | Data bits (informational — fixed at 8 internally) |
+| 5 | 6 | `DATA_BITS` | Actual data bits in use: 8 for RTU, 7 for ASCII. Read-only — computed from the mode at boot, not stored in flash. Writes are accepted but ignored. |
 | 6 | 7 | `STOP_BITS` | Stop bits |
 | 7 | 8 | `CRC` | CRC-16/Modbus of the stored flash config |
 | 8 | 9 | `WRITE_FLAG` | Write trigger: set any non-zero value to persist registers 1–8 to `FLASH_MB` and reboot |
@@ -166,14 +166,11 @@ of headroom before reaching the `FLASH_MB` boundary.
 |-------|------|-------|
 | `slaveAddr` | 1 byte | Modbus slave address (1–247) |
 | `mode` | 1 byte | `eMBMode` — MB_RTU or MB_ASCII |
-| `_pad[2]` | 2 bytes | Alignment padding |
-| `baudRate` | 4 bytes | Baud rate in bits/s |
 | `parity` | 1 byte | `eMBParity` — none / odd / even |
-| `dataBits` | 1 byte | Informational — FreeModbus RTU hardcodes 8 internally |
 | `stopBits` | 1 byte | Number of stop bits |
-| `_pad2` | 1 byte | Alignment padding |
-| `crc` | 2 bytes | CRC-16/Modbus over bytes 0–11 |
-| `_reserved[2]` | 2 bytes | Pad to 16 bytes for doubleword flash writes |
+| `baudRate` | 4 bytes | Baud rate in bits/s (4-byte aligned; parity and stopBits fill the natural gap) |
+| `crc` | 2 bytes | CRC-16/Modbus over bytes 0–7 |
+| `_reserved[6]` | 6 bytes | Pad to 16 bytes for doubleword flash writes |
 
 If the CRC fails (erased flash, first boot, or corruption), `mb_mem_get_config()` returns
 a pointer to a compile-time default struct populated from the `DEFAULT_*` macros in
@@ -211,6 +208,8 @@ When true, the three FreeModbus I/O functions behave as follows:
 
 Both ports speak Modbus RTU by default, configurable via holding registers.  
 In DYNAMIC mode the first task to send a frame claims the bus for 5 seconds of inactivity.
+
+**Data bits:** RTU always uses 8 data bits; ASCII always uses 7 data bits. Both are hardcoded by FreeModbus and cannot be changed via registers. Configure your master to match: 8-bit no parity for RTU; 7-bit for ASCII (per Modbus over Serial Line V1.02 §2.5.1).
 
 ### Supported Modbus Function Codes
 
@@ -428,8 +427,6 @@ For `hpcd_USB_FS` (`Src/hw/usbd_conf.c`) and `htim6` (`Src/hw/stm32l5xx_hal_time
 
 ### Release 1.1
 
-**Branch:** `bugfix/fix_assert_issue` — based on Release 1.0
-
 #### Improvements
 
 **Assert diagnostics**
@@ -447,8 +444,6 @@ For `hpcd_USB_FS` (`Src/hw/usbd_conf.c`) and `htim6` (`Src/hw/stm32l5xx_hal_time
 ---
 
 ### Release 1.0
-
-**Commit:** `b6853991`
 
 Initial release — FreeModbus RTU slave on the **STM32L552ZET6Q** (Cortex-M33, NUCLEO-L552ZE-Q).
 

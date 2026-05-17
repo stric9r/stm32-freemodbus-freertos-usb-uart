@@ -31,10 +31,6 @@ extern "C" {
 #define DEFAULT_PARITY      MB_PAR_NONE
 #endif
 
-#ifndef DEFAULT_DATA_BITS
-#define DEFAULT_DATA_BITS   8u
-#endif
-
 #ifndef DEFAULT_STOP_BITS
 #define DEFAULT_STOP_BITS   1u
 #endif

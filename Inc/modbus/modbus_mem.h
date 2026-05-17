@@ -19,19 +19,17 @@ extern "C" {
 #endif
 
 /* Modbus port configuration stored in FLASH_MB.
- * CRC covers all bytes before the crc field (offsetof(modbus_cfg_t, crc) = 12).
- * Add fields here to persist additional settings; expand FLASH_MB LENGTH accordingly. */
+ * CRC covers all bytes before the crc field (offsetof(modbus_cfg_t, crc) = 8).
+ * Add fields here to persist additional settings; expand FLASH_MB LENGTH accordingly.
+ * Note: data bits are not stored — FreeModbus hardcodes 8 for RTU and 7 for ASCII. */
 typedef struct {
     uint8_t  slaveAddr;
     uint8_t  mode;         /* eMBMode cast to uint8_t   */
-    uint8_t  _pad[2];      /* explicit pad to 4-byte-align baudRate */
-    uint32_t baudRate;
     uint8_t  parity;       /* eMBParity cast to uint8_t */
-    uint8_t  dataBits;     /* informational — FreeModbus RTU hardcodes 8 internally */
     uint8_t  stopBits;
-    uint8_t  _pad2;        /* explicit alignment pad */
+    uint32_t baudRate;     /* 4-byte aligned — parity and stopBits fill the gap */
     uint16_t crc;          /* CRC-16/Modbus over bytes [0, offsetof(crc)) */
-    uint8_t  _reserved[2]; /* pad to 16 bytes (2 doublewords) for HAL flash writes */
+    uint8_t  _reserved[6]; /* pad to 16 bytes (2 doublewords) for HAL flash writes */
 } modbus_cfg_t;
 
 void             mb_mem_init(void);

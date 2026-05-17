@@ -42,7 +42,6 @@ static volatile modbus_cfg_t const defaultCfg = {
     .mode      = (uint8_t)DEFAULT_MODE,
     .baudRate  = DEFAULT_BAUDERATE,
     .parity    = (uint8_t)DEFAULT_PARITY,
-    .dataBits  = DEFAULT_DATA_BITS,
     .stopBits  = DEFAULT_STOP_BITS,
     .crc       = 0u,
 };
@@ -87,7 +86,6 @@ void mb_mem_init(void)
     // high bytes
     regHoldingBuf[BAUDE_RATE_IDX + 1u] = (uint16_t)((pCfg->baudRate & 0xFFFF0000) >> 16u);
     regHoldingBuf[PARITY_IDX]          = pCfg->parity;
-    regHoldingBuf[DATA_BITS_IDX]       = pCfg->dataBits;
     regHoldingBuf[STOP_BITS_IDX]       = pCfg->stopBits;
     regHoldingBuf[CRC_IDX]             = pCfg->crc;
     // Write to flash flag
@@ -100,11 +98,17 @@ void mb_mem_init(void)
     // high bytes
     regInputBuf[BAUDE_RATE_IDX + 1u]   = (uint16_t)((pCfg->baudRate & 0xFFFF0000) >> 16u);
     regInputBuf[PARITY_IDX]            = pCfg->parity;
-    regInputBuf[DATA_BITS_IDX]         = pCfg->dataBits;
     regInputBuf[STOP_BITS_IDX]         = pCfg->stopBits;
     regInputBuf[CRC_IDX]               = pCfg->crc;
     // Write to flash flag
     regInputBuf[WRITE_FLAG_IDX]        = 0;
+
+    /* DATA_BITS is informational only. FreeModbus ignores the stored value
+     * and hardcodes the data width by mode (ASCII: 7, RTU: 8). Override
+     * both banks so the register always reflects what the UART actually uses. */
+    uint16_t const actual_data_bits = ((uint8_t)MB_ASCII == pCfg->mode) ? 7u : 8u;
+    regHoldingBuf[DATA_BITS_IDX] = actual_data_bits;
+    regInputBuf[DATA_BITS_IDX]   = actual_data_bits;
 }
 
 /**
@@ -138,8 +142,7 @@ uint16_t const * mb_mem_get_holding(uint16_t const addr)
  * @brief Validate a modbus_cfg_t before it is written to flash.
  *
  * Checks every field against the ranges that the rest of the system can
- * actually handle. dataBits must be exactly 8 because FreeModbus RTU and
- * the USART driver both hardcode that value. baudRate is capped at 115200.
+ * actually handle. baudRate is capped at 115200.
  * 
  * @note Does not check CRC, this happens at init when getting the data from
  *       FLASH.  
@@ -158,7 +161,6 @@ static bool cfg_is_valid(modbus_cfg_t const * const pCfg)
         bValid &= ((uint8_t)MB_RTU   == pCfg->mode) ||
                   ((uint8_t)MB_ASCII == pCfg->mode);
         bValid &= (pCfg->parity <= (uint8_t)MB_PAR_EVEN);
-        bValid &= (8u == pCfg->dataBits);
         bValid &= (1u == pCfg->stopBits) || (2u == pCfg->stopBits);
 
         switch (pCfg->baudRate)
@@ -222,7 +224,6 @@ bool mb_mem_set_holding(uint16_t const addr,
         cfg.baudRate  = (uint32_t)regHoldingBuf[BAUDE_RATE_IDX];
         cfg.baudRate |= ((uint32_t)regHoldingBuf[BAUDE_RATE_IDX + 1u] << 16u);
         cfg.parity    = regHoldingBuf[PARITY_IDX];
-        cfg.dataBits  = regHoldingBuf[DATA_BITS_IDX];
         cfg.stopBits  = regHoldingBuf[STOP_BITS_IDX];
 
         regHoldingBuf[WRITE_FLAG_IDX] = 0u;
