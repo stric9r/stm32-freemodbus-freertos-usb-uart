@@ -67,7 +67,6 @@ int main(void)
   vTaskStartScheduler();
 
   // We should never get here as control is now taken by the scheduler 
-
   // Infinite loop 
   for(;;)
   {
@@ -150,46 +149,3 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   }
 }
 
-/**
-  * @brief  This function is executed in case of error occurrence.
-  * @retval None
-  */
-void Error_Handler(void)
-{
-  /* User can add his own implementation to report the HAL error return state */
-  __disable_irq();
-  for(;;)
-  {
-  }
-}
-
-#ifdef USE_FULL_ASSERT
-
-static volatile bool isDebuggerAttached(void);
-
-/** @brief Checks if debugger is attached
- * 
- * @retval TRUE if attached, flase otherwise
-*/
-static volatile bool isDebuggerAttached(void) 
-{
-  return (CoreDebug->DHCSR & CoreDebug_DHCSR_C_DEBUGEN_Msk) != 0;
-}
-
-/**
-  * @brief  Reports the name of the source file and the source line number
-  *         where the assert_param error has occurred.
-  * @param  file: pointer to the source file name
-  * @param  line: assert_param error line source number
-  * @retval None
-  */
-void assert_failed(uint8_t *file, uint32_t line)
-{
-    // @todo [2026-4-12] Print to a serial debug port
-
-    if(isDebuggerAttached())
-    {
-      Error_Handler();
-    }
-}
-#endif /* USE_FULL_ASSERT */

@@ -27,7 +27,7 @@ static UART_HandleTypeDef * const pHandle = &huart2;
 
 UART_HandleTypeDef * USART2_GetHandle(void)
 {
-    return &huart2;
+    return pHandle;
 }
 
 DMA_HandleTypeDef hdma_usart2_tx;

@@ -166,6 +166,14 @@ SECTIONS
     __bss_end__ = _ebss;
   } >RAM
 
+  /* No-init section — not zeroed on reset, so content survives watchdog resets */
+  .noinit (NOLOAD) :
+  {
+    . = ALIGN(4);
+    KEEP(*(.noinit*))
+    . = ALIGN(4);
+  } >RAM
+
   /* User_heap_stack section, used to check that there is enough "RAM" Ram  type memory left */
   ._user_heap_stack :
   {

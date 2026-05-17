@@ -72,7 +72,7 @@ void modbus_task(void * pvParameters)
 
     mb_mem_init();
 
-    modbus_cfg_t const * const pCfg = mb_mem_get_config();
+    volatile modbus_cfg_t const * const pCfg = mb_mem_get_config();
     (void)eMBInit((eMBMode)pCfg->mode,
                   pCfg->slaveAddr,
                   0,                   /* port — not used by this BSP */
