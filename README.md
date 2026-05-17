@@ -136,7 +136,7 @@ Both the holding and input banks are initialised at boot from the active flash c
 | 2 | 3 | `BAUD_RATE_LO` | Baud rate bits [15:0] |
 | 3 | 4 | `BAUD_RATE_HI` | Baud rate bits [31:16] |
 | 4 | 5 | `PARITY` | `eMBParity`: 0 = none, 1 = odd, 2 = even |
-| 5 | 6 | `DATA_BITS` | Data bits (informational — fixed at 8 internally) |
+| 5 | 6 | `DATA_BITS` | Actual data bits in use: 8 for RTU, 7 for ASCII. Read-only — computed from the mode at boot, not stored in flash. Writes are accepted but ignored. |
 | 6 | 7 | `STOP_BITS` | Stop bits |
 | 7 | 8 | `CRC` | CRC-16/Modbus of the stored flash config |
 | 8 | 9 | `WRITE_FLAG` | Write trigger: set any non-zero value to persist registers 1–8 to `FLASH_MB` and reboot |
@@ -166,14 +166,11 @@ of headroom before reaching the `FLASH_MB` boundary.
 |-------|------|-------|
 | `slaveAddr` | 1 byte | Modbus slave address (1–247) |
 | `mode` | 1 byte | `eMBMode` — MB_RTU or MB_ASCII |
-| `_pad[2]` | 2 bytes | Alignment padding |
-| `baudRate` | 4 bytes | Baud rate in bits/s |
 | `parity` | 1 byte | `eMBParity` — none / odd / even |
-| `dataBits` | 1 byte | Informational — FreeModbus RTU hardcodes 8 internally |
 | `stopBits` | 1 byte | Number of stop bits |
-| `_pad2` | 1 byte | Alignment padding |
-| `crc` | 2 bytes | CRC-16/Modbus over bytes 0–11 |
-| `_reserved[2]` | 2 bytes | Pad to 16 bytes for doubleword flash writes |
+| `baudRate` | 4 bytes | Baud rate in bits/s (4-byte aligned; parity and stopBits fill the natural gap) |
+| `crc` | 2 bytes | CRC-16/Modbus over bytes 0–7 |
+| `_reserved[6]` | 6 bytes | Pad to 16 bytes for doubleword flash writes |
 
 If the CRC fails (erased flash, first boot, or corruption), `mb_mem_get_config()` returns
 a pointer to a compile-time default struct populated from the `DEFAULT_*` macros in
@@ -211,6 +208,8 @@ When true, the three FreeModbus I/O functions behave as follows:
 
 Both ports speak Modbus RTU by default, configurable via holding registers.  
 In DYNAMIC mode the first task to send a frame claims the bus for 5 seconds of inactivity.
+
+**Data bits:** RTU always uses 8 data bits; ASCII always uses 7 data bits. Both are hardcoded by FreeModbus and cannot be changed via registers. Configure your master to match: 8-bit no parity for RTU; 7-bit for ASCII (per Modbus over Serial Line V1.02 §2.5.1).
 
 ### Supported Modbus Function Codes
 
@@ -419,6 +418,62 @@ For `hpcd_USB_FS` (`Src/hw/usbd_conf.c`) and `htim6` (`Src/hw/stm32l5xx_hal_time
 #### What Was Not Changed
 
 `Drivers/` (HAL + CMSIS) and `Middlewares/` (FreeRTOS, FreeModbus, USB Device Library) are vendor/third-party code and are never modified. The STM32 USB Device Library's callback interface (`USBD_CDC_ItfTypeDef`) requires the CDC layer (`usbd_cdc_if.c`) to hold a reference to the device handle in order to re-arm the RX endpoint after each receive — fully hiding `hUsbDeviceFS` from `usbd_cdc_if.c` would require changing that middleware interface. The getter (`USB_GetDeviceHandle()`) is the practical ceiling without touching vendor code.
+
+---
+
+---
+
+## Release Notes
+
+### Release 1.1
+
+#### Improvements
+
+**Assert diagnostics**
+- Failed assertions now capture the crash location (file, line, function, expression) into a reserved RAM region that survives a watchdog reset, enabling post-mortem diagnosis without a debugger.
+- If a debugger is attached at the time of the fault, execution halts for live inspection before the device resets.
+
+**Dual-transport stability (DYNAMIC mode)**
+- Fixed three race conditions that allowed USB and UART to interfere with each other under simultaneous traffic, causing state machine corruption and unexpected resets.
+- The port layer now correctly tracks the full UART request-response cycle — both the receive and transmit phases — and blocks the USB port from claiming the bus during either.
+
+**Modbus ASCII support**
+- Both UART and USB transports now support Modbus ASCII mode in addition to RTU.
+- USB pre-validation correctly handles ASCII frames — decodes the slave address and verifies the LRC rather than applying the RTU CRC check, which previously caused all ASCII frames to be silently discarded.
+- The flash configuration struct was tightened: data bits are no longer stored since FreeModbus hardcodes 7 for ASCII and 8 for RTU regardless. The DATA_BITS register is now computed from the active mode at boot.
+
+**Code cleanup**
+- Removed legacy error-handling scaffolding superseded by the new assert diagnostics.
+- Stripped unused newlib heap and syscall code; the build now produces zero warnings.
+
+---
+
+### Release 1.0
+
+Initial release — FreeModbus RTU slave on the **STM32L552ZET6Q** (Cortex-M33, NUCLEO-L552ZE-Q).
+
+**Platform**
+- STM32L552ZET6Q — Cortex-M33, 110 MHz, 512 KB flash, 256 KB RAM
+- FreeRTOS V10.6.2
+- FreeModbus RTU slave — custom FreeRTOS port layer; vendor source unmodified
+
+**Communications**
+- UART — Modbus RTU, configurable baud rate, parity, stop bits, and slave address; configuration persisted to flash
+- USB CDC — virtual COM port as a second independent Modbus port sharing the same register bank
+- Both ports active simultaneously in DYNAMIC mode; first complete frame claims the bus
+
+**Supported function codes:** FC01, FC02, FC03, FC04, FC05, FC15, FC16
+
+**Register map**
+- 100 holding registers (read/write; offsets 0–8 are flash-persistent configuration)
+- 100 input registers (read-only; mirrors configuration)
+- 8 coil outputs (GPIO-backed)
+- 16 discrete inputs (4 GPIO-backed: three LEDs + user button; 12 always 0)
+
+**Other**
+- Hardware watchdog with per-task check-in — never pet unless all tasks are healthy
+- Hardware one-shot timer for Modbus inter-frame silence detection
+- CRC-validated flash configuration with compile-time defaults on first boot
 
 ---
 

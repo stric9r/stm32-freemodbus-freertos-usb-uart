@@ -28,11 +28,11 @@ void portserial_usb_put_byte(uint8_t const b);
 void portserial_usb_flush_tx(void);
 
 /*
- * Transport-mux API (implemented in portserial.c — these functions modify
+ * Transport-mux API (implemented in portserial.c,  these functions modify
  * state that lives alongside the UART serial port functions so that the
  * FreeModbus port layer can route bytes to/from USB vs UART transparently).
  *
- * vMBPortSetUsbActive()   — call before injecting a USB frame; disables UART
+ * vMBPortSetUsbActive()     call before injecting a USB frame; disables UART
  *                           byte routing and redirects FreeModbus I/O to USB.
  *                           Automatically cleared after the response TX cycle
  *                           completes inside vMBPortSerialEnable(TRUE,FALSE).
@@ -47,11 +47,23 @@ void vMBPortSetUsbActive(bool active);
 void vMBPortUsbInjectFrame(uint8_t const * pFrame, uint16_t len);
 
 /*
- * xMBPortIsUsbActive() — read by porttimer.c to suppress LPTIM1 during injection.
+ * xMBPortIsUsbActive() read by porttimer.c to suppress LPTIM1 during injection.
  * Declared here (not as a raw extern in porttimer.c) to keep module coupling
  * explicit through header includes.
  */
 bool xMBPortIsUsbActive(void);
+
+/*
+ * UART receive activity tracking, used by modbus_port_ownership_try_claim()
+ * to prevent USB from claiming the bus while UART is mid-frame, and by
+ * portevent.c to clear the flag when a complete frame has been received.
+ *
+ * bMBPortSerialUartIsIdle()      returns true when no UART frame is in progress.
+ * vMBPortSerialNotifyFrameEnd()  clears the active flag; called from
+ *                                xMBPortEventPost() on EV_FRAME_RECEIVED.
+ */
+bool bMBPortSerialUartIsIdle(void);
+void vMBPortSerialNotifyFrameEnd(void);
 
 #ifdef __cplusplus
 }

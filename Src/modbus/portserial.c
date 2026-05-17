@@ -106,6 +106,40 @@
 static volatile bool bUsbActive = false;
 
 /**
+ * True from the moment the first byte of a UART frame is read by
+ * xMBPortSerialGetByte() until xMBPortEventPost() signals EV_FRAME_RECEIVED.
+ * Checked by modbus_port_ownership_try_claim() to block USB from injecting
+ * a frame while UART is mid-frame — the semaphore alone is insufficient
+ * because UART does not claim it per-byte, only at the frame level.
+ */
+static volatile bool bUartRxActive = false;
+
+/**
+ * True from vMBPortSerialEnable(FALSE,TRUE) (UART TX start) until
+ * vMBPortSerialEnable(TRUE,FALSE) (UART TX done / RX restore).  Together
+ * with bUartRxActive it covers the full request-response cycle: USB is
+ * blocked from injecting while UART is transmitting a response, preventing
+ * xMBRTUReceiveFSM() from asserting eSndState == STATE_TX_IDLE.
+ */
+static volatile bool bUartTxActive = false;
+
+/**
+ * Set to true by vMBPortSerialNotifyFrameEnd() when EV_FRAME_RECEIVED is
+ * posted during USB frame injection (i.e. while bUsbActive is true).
+ *
+ * In ASCII mode the receive FSM posts EV_FRAME_RECEIVED itself when it
+ * detects the CRLF end-of-frame inside the injection loop — before the loop
+ * exits.  The synthetic pxMBPortCBTimerExpired() call that follows the loop
+ * is RTU-specific (t3.5 silence); in ASCII mode it would call
+ * xMBASCIITimerT1SExpired() with eRcvState == STATE_RX_IDLE and assert.
+ * This flag lets vMBPortUsbInjectFrame() detect that case and skip the call.
+ *
+ * Reset to false at the start of every injection; set to true inside
+ * vMBPortSerialNotifyFrameEnd() only when bUsbActive is true.
+ */
+static volatile bool bInjectionFrameReceived = false;
+
+/**
  * Staging register for the byte currently being injected into
  * xMBRTUReceiveFSM().  xMBPortSerialGetByte() reads this instead of
  * USART2->RDR when bUsbActive is true.  Written immediately before each
@@ -145,6 +179,16 @@ void vMBPortSetUsbActive(bool active)
          * and call xMBRTUTimerT35Expired() prematurely, resetting eRcvState to
          * STATE_RX_IDLE before our explicit pxMBPortCBTimerExpired() call.    */
         vMBPortTimersDisable();
+        /* Mask UART RX so bytes arriving during USB frame injection cannot
+         * call pxMBFrameCBByteReceived() and corrupt the RTU state machine.
+         * The normal TX-complete path (vMBPortSerialEnable(TRUE,FALSE))
+         * re-enables RXNEIE directly; the else branch below handles the
+         * ownership-timeout path (port_owner_timeout_cb → this function).    */
+        MB_SERIAL_DISABLE_RX_IRQ();
+    }
+    else
+    {
+        MB_SERIAL_ENABLE_RX_IRQ();
     }
     bUsbActive = active;
 
@@ -155,32 +199,34 @@ void vMBPortSetUsbActive(bool active)
 }
 
 /**
- * @brief Inject a validated USB CDC frame into the FreeModbus RTU state machine.
+ * @brief Inject a validated USB CDC frame into the FreeModbus state machine.
  *
- * Feeds each byte from @p pFrame one at a time into xMBRTUReceiveFSM() via the
- * pxMBFrameCBByteReceived function pointer — exactly as the UART ISR would do
- * for bytes arriving from USART2.  After the last byte, fires
- * pxMBPortCBTimerExpired() to simulate the t3.5 inter-frame silence, which
- * posts EV_FRAME_RECEIVED to the FreeModbus event queue.
+ * Feeds each byte from @p pFrame one at a time into the active receive FSM
+ * via pxMBFrameCBByteReceived — exactly as the UART ISR would for bytes
+ * arriving from USART2.
  *
- * After this call returns, eMBPoll() in modbus_task will pick up
- * EV_FRAME_RECEIVED, validate CRC (which must already pass — only call this
- * with a CRC-valid, address-matched frame), dispatch the function-code handler,
- * and send the response through vMBPortSerialPutByte() / vMBPortSerialEnable()
- * — both of which are redirected to USB when bUsbActive is true.
+ * ## RTU mode
+ * After the last byte, fires pxMBPortCBTimerExpired() inside a critical
+ * section to simulate t3.5 inter-frame silence.  The critical section defers
+ * the context switch until xMBRTUTimerT35Expired() sets eRcvState =
+ * STATE_RX_IDLE; without it, modbus_task preempts while eRcvState is still
+ * STATE_RX_RCV and eMBRTUSend aborts the response.
  *
- * t3.5 suppression: xMBRTUReceiveFSM() calls vMBPortTimersEnable() after each
- * byte to restart LPTIM1.  vMBPortTimersEnable() is a no-op while
- * xMBPortIsUsbActive() returns true (guard in porttimer.c).  As an extra
- * safety net, vMBPortTimersDisable() is called after each injection to cancel
- * any arm that slipped through a race.
+ * ## ASCII mode
+ * xMBASCIIReceiveFSM() detects the CRLF end-of-frame inside the loop,
+ * sets eRcvState = STATE_RX_IDLE, and posts EV_FRAME_RECEIVED itself.
+ * vMBPortSerialNotifyFrameEnd() (called via xMBPortEventPost) sets
+ * bInjectionFrameReceived.  The pxMBPortCBTimerExpired() call is skipped
+ * because xMBASCIITimerT1SExpired() asserts eRcvState != STATE_RX_IDLE.
  *
- * @param pFrame  Pointer to the raw RTU frame (addr + PDU + CRC).
+ * @param pFrame  Pointer to the frame bytes (RTU: addr+PDU+CRC;
+ *                ASCII: raw bytes including ':' and CRLF).
  * @param len     Total frame length in bytes.
  */
 void vMBPortUsbInjectFrame(uint8_t const * pFrame, uint16_t len)
 {
     vMBPortTimersDisable();
+    bInjectionFrameReceived = false;
 
     for (uint16_t i = 0u; i < len; i++)
     {
@@ -189,25 +235,25 @@ void vMBPortUsbInjectFrame(uint8_t const * pFrame, uint16_t len)
         vMBPortTimersDisable();
 
         /* Stage the byte so xMBPortSerialGetByte() can return it when
-         * xMBRTUReceiveFSM() calls it on the very next line.            */
+         * the receive FSM calls it on the very next line.                */
         usbPendingByte = (CHAR)pFrame[i];
 
-        /* Equivalent to the UART ISR calling pxMBFrameCBByteReceived().
-         * xMBRTUReceiveFSM() reads usbPendingByte via xMBPortSerialGetByte()
-         * and appends it to ucRTUBuf[], then calls vMBPortTimersEnable()
-         * which is suppressed by the xMBPortIsUsbActive() guard.         */
+        /* Feed byte into the active receive FSM (RTU or ASCII depending on
+         * eMBInit mode).  In ASCII mode, detecting CRLF here will post
+         * EV_FRAME_RECEIVED and set bInjectionFrameReceived via the
+         * xMBPortEventPost hook.                                         */
         (void)pxMBFrameCBByteReceived();
-
     }
 
-    /* Simulate t3.5 inter-frame silence.  taskENTER_CRITICAL defers the
-     * context switch until after xMBRTUTimerT35Expired sets eRcvState =
-     * STATE_RX_IDLE (mbrtu.c line 424).  Without it, xMBPortEventPost
-     * (EV_FRAME_RECEIVED) immediately preempts to modbus_task which sees
-     * eRcvState == STATE_RX_RCV and eMBRTUSend aborts the response. */
-    taskENTER_CRITICAL();
-    (void)pxMBPortCBTimerExpired();
-    taskEXIT_CRITICAL();
+    /* RTU only: simulate t3.5 inter-frame silence so EV_FRAME_RECEIVED is
+     * posted with eRcvState == STATE_RX_IDLE.  Skipped in ASCII mode because
+     * the FSM already posted EV_FRAME_RECEIVED on CRLF detection above.    */
+    if (!bInjectionFrameReceived)
+    {
+        taskENTER_CRITICAL();
+        (void)pxMBPortCBTimerExpired();
+        taskEXIT_CRITICAL();
+    }
 }
 
 /* -------------------------------------------------------------------------
@@ -337,6 +383,15 @@ void vMBPortSerialEnable( BOOL rxEnable, BOOL txEnable )
     }
 
     /* --- UART path --- */
+    if (!rxEnable && txEnable)
+    {
+        bUartTxActive = true;
+    }
+    else if (rxEnable && !txEnable)
+    {
+        bUartTxActive = false;
+    }
+
     if (rxEnable)
     {
         MB_SERIAL_ENABLE_RX_IRQ();
@@ -409,8 +464,49 @@ BOOL xMBPortSerialGetByte( CHAR *byte )
         *byte = usbPendingByte;
         return TRUE;
     }
+    bUartRxActive = true;
     *byte = (CHAR)MB_SERIAL_GET_BYTE();
     return TRUE;
+}
+
+/**
+ * @brief Notify portserial that a complete UART frame has been received.
+ *
+ * Called from xMBPortEventPost() (portevent.c) whenever EV_FRAME_RECEIVED
+ * is posted.  Clears bUartRxActive so that bMBPortSerialUartIsIdle() returns
+ * true and modbus_port_ownership_try_claim() can grant the bus to USB on the
+ * next frame.
+ *
+ * Hooking into xMBPortEventPost() makes this mode-agnostic: RTU posts
+ * EV_FRAME_RECEIVED from the t3.5 timer ISR; ASCII posts it on CRLF
+ * detection inside xMBASCIIReceiveFSM().  Both paths converge at the same
+ * point without any mode-specific timer dependency here.
+ */
+void vMBPortSerialNotifyFrameEnd(void)
+{
+    bUartRxActive = false;
+    if (bUsbActive)
+    {
+        bInjectionFrameReceived = true;
+    }
+}
+
+/**
+ * @brief Returns true when no UART receive activity is in progress.
+ *
+ * Used by modbus_port_ownership_try_claim() to prevent USB from injecting
+ * a frame while UART is mid-frame.  The ownership semaphore alone is
+ * insufficient because UART does not claim the semaphore per-byte — only
+ * at the frame level.  A USB frame arriving after the first UART byte but
+ * before t3.5 could take the semaphore, set bUsbActive, and inject bytes
+ * into an RTU state machine already in STATE_RX_RCV, corrupting it.
+ *
+ * @return true  No UART byte has been received since the last frame end.
+ * @return false A UART frame is in progress — USB must discard its frame.
+ */
+bool bMBPortSerialUartIsIdle(void)
+{
+    return !bUartRxActive && !bUartTxActive;
 }
 
 /**

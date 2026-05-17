@@ -74,7 +74,112 @@
 /* Minimum valid frame: addr + FC + 4 data bytes + 2 CRC = 8 bytes */
 #define SER_PDU_SIZE_MIN    8u
 
+/* Ascii Conversion ERROR*/
+#define ASCII_CONV_ERR      0xFF
+
 static uint8_t slaveAddr;
+
+static uint8_t ascii_hex_nibble(uint8_t const c);
+
+/**
+ * @brief Decode one ASCII hex character to its 4-bit binary value.
+ *
+ * @return 0-15 for valid hex digits '0'-'9', 'A'-'F'.
+ * @return ASCII_CONV_ERR for any other character (invalid).
+ */
+static uint8_t ascii_hex_nibble(uint8_t const c)
+{
+    uint8_t result = ASCII_CONV_ERR;
+    if ((c >= '0') && (c <= '9')) 
+    { 
+        result = c - '0';
+    }
+    else if ((c >= 'A') && (c <= 'F')) 
+    { 
+        result = (uint8_t)(c - 'A' + 10u); 
+    }
+
+    return result;
+}
+
+/**
+ * @brief Validate a Modbus ASCII frame received over USB CDC.
+ *
+ * Verifies frame structure, decodes the hex-pair encoding to binary,
+ * checks the decoded slave address against @p slaveAddr, and validates
+ * the LRC checksum.
+ *
+ * In Modbus ASCII the first byte is always ':'.  The slave address is
+ * therefore at encoded positions [1..2], not at frameBuf[0].
+ *
+ * @param frameBuf   Raw bytes from the USB CDC stream, frameBuf[0] == ':'.
+ * @param frameLen   Total byte count including ':' and CRLF.
+ * @param slaveAddr  Expected slave address (binary, not ASCII-encoded).
+ * @return true  Frame is structurally valid, addressed to this slave,
+ *               and the LRC matches.
+ * @return false Frame is malformed, addressed elsewhere, or LRC mismatch.
+ */
+static bool ascii_frame_is_valid(uint8_t const * const frameBuf,
+                                 uint16_t const        frameLen,
+                                 uint8_t const         slaveAddr)
+{
+    bool bValid = (frameLen >= 9u)
+               && ('\r' == (char)frameBuf[frameLen - 2u])
+               && ('\n' == (char)frameBuf[frameLen - 1u]);
+
+    if (bValid)
+    {
+        /* Hex payload sits between ':' and CRLF — must be an even char count */
+        uint16_t const hex_len = frameLen - 3u;   /* minus ':', CR, LF */
+        bValid = (0u == (hex_len & 1u)) && (hex_len >= 4u);
+
+        if (bValid)
+        {
+            uint16_t const bin_len      = hex_len / 2u;
+            uint8_t        lrc_sum      = 0u;
+            uint8_t        decoded_addr = 0u;
+
+            /* Decode hex pairs; accumulate LRC over all bytes except the last */
+            for (uint16_t i = 0u; bValid && (i < bin_len); i++)
+            {
+                uint8_t const hi = ascii_hex_nibble(frameBuf[1u + (i * 2u)]);
+                uint8_t const lo = ascii_hex_nibble(frameBuf[2u + (i * 2u)]);
+                bValid = (ASCII_CONV_ERR != hi) && (ASCII_CONV_ERR != lo);
+
+                if (bValid)
+                {
+                    uint8_t const decoded = (uint8_t)((hi << 4u) | lo);
+                    if (0u == i)
+                    { 
+                        decoded_addr = decoded; 
+                    }
+                    if (i < (bin_len - 1u)) 
+                    { 
+                        lrc_sum += decoded; 
+                    }
+                }
+            }
+
+            if (bValid)
+            {
+                bValid = (decoded_addr == slaveAddr);
+            }
+
+            if (bValid)
+            {
+                uint8_t const hi_lrc = ascii_hex_nibble(
+                    frameBuf[1u + ((bin_len - 1u) * 2u)]);
+                uint8_t const lo_lrc = ascii_hex_nibble(
+                    frameBuf[2u + ((bin_len - 1u) * 2u)]);
+                uint8_t const stored_lrc   = (uint8_t)((hi_lrc << 4u) | lo_lrc);
+                uint8_t const computed_lrc = (uint8_t)(-(int8_t)lrc_sum);
+                bValid = (stored_lrc == computed_lrc);
+            }
+        }
+    }
+
+    return bValid;
+}
 
 /**
  * @brief Initialise the USB Modbus adapter.
@@ -148,25 +253,39 @@ eMBErrorCode modbus_usb_run(void)
      * frame the port layer would be left in USB mode permanently and UART
      * would stop responding.
      *
-     * Note: FreeModbus performs its own CRC and address checks internally —
-     * these pre-checks are a defensive duplicate to protect port state only.
-     * Silent discard (errorCode stays MB_ENOERR) is the correct behaviour
-     * for all three failure cases.                                           */
+     * Frames starting with ':' are Modbus ASCII — validated with LRC and
+     * decoded slave address.  All other frames are treated as Modbus RTU —
+     * validated with RTU CRC and raw slave address byte.
+     *
+     * Silent discard (errorCode stays MB_ENOERR) is correct for all failure
+     * cases; only the portMAX_DELAY timeout returns MB_ETIMEDOUT.           */
     if (bContinue && (frameLen < (uint16_t)SER_PDU_SIZE_MIN))
     {
         bContinue = false;  /* too short — discard silently */
     }
 
-    if (bContinue && (frameBuf[SER_PDU_ADDR_OFF] != slaveAddr))
+    if (bContinue)
     {
-        bContinue = false;  /* not our address — discard silently */
-    }
+        if (':' == (char)frameBuf[0])
+        {
+            /* ASCII frame — validate structure, slave address, and LRC */
+            bContinue = ascii_frame_is_valid(frameBuf, frameLen, slaveAddr);
+        }
+        else
+        {
+            /* RTU frame — validate slave address and CRC */
+            if (frameBuf[SER_PDU_ADDR_OFF] != slaveAddr)
+            {
+                bContinue = false;  /* not our address — discard silently */
+            }
 
-    /* usMBCRC16 over the entire frame including the two CRC bytes must yield 0
-     * for a valid frame.  The CRC bytes are appended little-endian by the master. */
-    if (bContinue && (0u != usMBCRC16((UCHAR const *)frameBuf, frameLen)))
-    {
-        bContinue = false;  /* CRC mismatch — discard silently */
+            /* usMBCRC16 over the entire frame including the two CRC bytes
+             * must yield 0 for a valid RTU frame.                          */
+            if (bContinue && (0u != usMBCRC16((UCHAR const *)frameBuf, frameLen)))
+            {
+                bContinue = false;  /* CRC mismatch — discard silently */
+            }
+        }
     }
 
     /* --- Port ownership ---
